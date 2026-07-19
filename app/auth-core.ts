@@ -1,4 +1,5 @@
-import { env } from "cloudflare:workers";
+// Use standard Node environment variables for Vercel
+const env = process.env;
 import { cookies } from "next/headers";
 import { ensureDb } from "../db";
 

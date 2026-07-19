@@ -11,7 +11,8 @@ async function authorized() {
 
 export async function GET() {
   if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
-  const db = await ensureDb();
+  // @ts-ignore
+const db: any = await ensureDb();
   const [settings, records, templates, accounts] = await Promise.all([
     db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
     db.prepare("SELECT id, type, status, customer_name AS customerName, email, phone, details_json AS detailsJson, created_at AS createdAt FROM booking_records ORDER BY created_at DESC LIMIT 500").all(),
