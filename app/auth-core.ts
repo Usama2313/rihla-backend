@@ -103,7 +103,7 @@ export async function currentPortalUser(): Promise<PortalUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const db = await ensureDb();
-  const user = await db.prepare("SELECT u.id, u.phone, u.role, u.status, u.last_login_at AS lastLoginAt FROM auth_sessions s JOIN portal_users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?")
+  const user = (await db.prepare("SELECT u.id, u.phone, u.role, u.status, u.last_login_at AS lastLoginAt FROM auth_sessions s JOIN portal_users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?")
 // @ts-ignore
     .bind(await sha256(token), new Date().toISOString()).first()) as PortalUser | undefined;
   return user || null;
