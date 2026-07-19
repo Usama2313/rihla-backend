@@ -10,7 +10,7 @@ export function getDb() {
   return drizzle(env.DB, { schema });
 }
 
-export async function ensureDb(): any {
+export async function ensureDb(): Promise<any> {
   if (!env.DB) throw new Error("Database is unavailable.");
   await env.DB.batch([
     env.DB.prepare("CREATE TABLE IF NOT EXISTS booking_records (id TEXT PRIMARY KEY, type TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new', customer_name TEXT NOT NULL, email TEXT, phone TEXT, details_json TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
