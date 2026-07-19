@@ -237,6 +237,7 @@ export default function Home() {
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         const ctx = canvas.getContext("2d")!;
+        // @ts-ignore
         await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
         imageSource = await new Promise<Blob>((resolve, reject) =>
           canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
