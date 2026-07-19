@@ -1,0 +1,43 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/api/flights/prebook"
+  to = "/.netlify/functions/flights-prebook"
+  status = 200
+
+[[redirects]]
+  from = "/api/flights/book"
+  to = "/.netlify/functions/flights-book"
+  status = 200
+
+[[redirects]]
+  from = "/api/flights/status"
+  to = "/.netlify/functions/flights-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/flights"
+  to = "/.netlify/functions/flights"
+  status = 200
+
+[[redirects]]
+  from = "/api/records"
+  to = "/.netlify/functions/records"
+  status = 200
+
+[[redirects]]
+  from = "/api/settings"
+  to = "/.netlify/functions/settings"
+  status = 200
+
+# SPA fallback — all other routes serve index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
