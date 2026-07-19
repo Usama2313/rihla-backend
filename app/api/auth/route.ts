@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       const challenge = await consumeChallenge(String(body.setupToken || ""), phone);
       const db = await ensureDb();
       // @ts-ignore
-const existing = await db.prepare("SELECT id, role FROM portal_users WHERE phone = ?").bind(phone).first();
+      const existing = (await db.prepare("SELECT id, role FROM portal_users WHERE phone = ?").bind(phone).first()) as { id: string; role: string } | undefined;
       const credentials = await passwordHash(password);
       const now = new Date().toISOString();
       const userId = existing?.id || crypto.randomUUID();
@@ -65,7 +65,7 @@ const existing = await db.prepare("SELECT id, role FROM portal_users WHERE phone
       }
       await createSession(userId);
       // @ts-ignore
-      const status = existing ? (await db.prepare("SELECT status FROM portal_users WHERE id = ?").bind(userId).first())?.status : challenge.role === "customer" ? "active" : "pending";
+      const status = existing ? ((await db.prepare("SELECT status FROM portal_users WHERE id = ?").bind(userId).first()) as { status: string } | undefined)?.status : challenge.role === "customer" ? "active" : "pending";
       return NextResponse.json({ saved: true, role: existing?.role || challenge.role, status });
     }
 
@@ -74,9 +74,9 @@ const existing = await db.prepare("SELECT id, role FROM portal_users WHERE phone
       const password = String(body.password || "");
       await rateLimit(phone, "login", 8);
       const db = await ensureDb();
-      const user = await db.prepare("SELECT id, phone, role, status, password_hash AS passwordHash, password_salt AS passwordSalt FROM portal_users WHERE phone = ?")
+      const user = (await db.prepare("SELECT id, phone, role, status, password_hash AS passwordHash, password_salt AS passwordSalt FROM portal_users WHERE phone = ?")
 // @ts-ignore
-        .bind(phone).first();
+        .bind(phone).first()) as { id: string; phone: string; role: string; status: string; passwordHash: string; passwordSalt: string } | undefined;
       if (!user || !(await verifyPassword(password, user.passwordSalt, user.passwordHash))) throw new Error("Mobile number or password is incorrect.");
       if (user.status === "suspended") throw new Error("This account is suspended. Contact Rihla support.");
       await createSession(user.id);
