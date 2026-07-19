@@ -264,8 +264,8 @@ export default function Home() {
         },
       });
       const { data } = await worker.recognize(imageSource);
-      const lines = data.text.toUpperCase().split(/\r?\n/).map((line) => line.replace(/\s/g, "")).filter((line) => line.length >= 40);
-      const mrz1 = lines.find((line) => /^P[<A-Z]/.test(line));
+      const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
+      const mrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
       const mrz2 = mrz1 ? lines[lines.indexOf(mrz1) + 1] : undefined;
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
 
