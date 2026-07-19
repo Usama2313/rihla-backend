@@ -1,5 +1,5 @@
 // Use standard environment variables for Vercel
-const env = process.env;
+const env = process.env as any;
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
