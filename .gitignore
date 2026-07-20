@@ -43,3 +43,7 @@ work/
 
 # Local Netlify folder
 .netlify
+
+# build cache files
+*.tsbuildinfo
+
