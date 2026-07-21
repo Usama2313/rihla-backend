@@ -17,7 +17,7 @@ button { cursor:pointer; }
 .headerActions { display:flex; align-items:center; gap:10px; }
 .iconButton,.avatar { border:1px solid #d9ded9; background:white; border-radius:50%; width:38px; height:38px; color:var(--ink); font-weight:700; font-size:11px; }
 .avatar { background:#e8b85c; color:#543b12; border:0; }
-.hero { min-height:630px; padding:74px max(6vw,28px) 66px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(420px,.8fr); gap:7vw; align-items:center; background: radial-gradient(circle at 15% 20%,rgba(224,239,230,.9),transparent 32%), linear-gradient(112deg,rgba(249,245,236,.85) 0%,rgba(245,239,226,.85) 55%,rgba(235,223,202,.85) 100%), url('/makkah-madinah-bg.png') no-repeat center center; background-size: cover; overflow:hidden; position:relative; }
+.hero { min-height:630px; padding:74px max(6vw,28px) 66px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(420px,.8fr); gap:7vw; align-items:center; background: linear-gradient(to right, rgba(251,249,244,0.9) 0%, rgba(251,249,244,0.7) 40%, rgba(251,249,244,0.1) 100%), url('/makkah-panorama.jpg') no-repeat center center; background-size: cover; overflow:hidden; position:relative; }
 .heroDecor { position:absolute; border:1px solid rgba(29,90,72,.16); border-radius:50%; }
 .heroDecorOne { width:520px; height:520px; left:-300px; bottom:-300px; }
 .heroDecorTwo { width:320px; height:320px; right:-180px; top:-120px; }
