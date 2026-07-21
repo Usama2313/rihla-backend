@@ -185,7 +185,7 @@ export default function Home() {
       const price = Number(data.price) || offer.price;
       setBookingSubmitted(false);
       setSelectedFlight({ offerCode: data.offerCode, searchGuid: data.searchGuid, currency: data.currency, summary: `${offer.airline} ${offer.flightNumber}, ${flightSearch.from} (${airportName(flightSearch.from)}) to ${flightSearch.to} (${airportName(flightSearch.to)}), ${data.currency} ${price.toFixed(2)}`, offer: { ...offer, price } });
-      setBookingStage("fare");
+      setBookingStage("passenger");
       setBookingForm((current) => ({ ...current, passengers: flightSearch.adults }));
       setSelectedBooking("");
       setTimeout(() => document.getElementById("fare-details")?.scrollIntoView({ behavior: "smooth" }), 0);

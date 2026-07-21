@@ -145,3 +145,66 @@ body{background:linear-gradient(180deg,#f9fbff,#eef2ff);color:var(--ink)}
 @media(max-width:800px){.adminGrid{grid-template-columns:1fr}.adminShell>header,.connectedAccounts{align-items:flex-start;flex-direction:column}.connectedAccounts>div:last-child{justify-content:flex-start}.recordList article{align-items:flex-start;flex-direction:column}}
 
 .adminWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:22px}.adminWorkspace>.templateManager,.adminWorkspace>.recordsCard{grid-column:1/-1}.templateWorkspace{display:grid;grid-template-columns:minmax(320px,.8fr) minmax(0,1.2fr);gap:22px;margin-top:18px}.adminEditor,.bookingRecordEditor{padding:18px;border-radius:14px;background:#f4f8f6;border:1px solid #d9e5df}.adminEditor h3,.bookingRecordEditor h3{margin:0 0 12px;font-size:19px}.adminCard textarea,.adminCard select{display:block;width:100%;margin-top:5px;border:1px solid #d6e3dd;border-radius:9px;background:white;padding:11px;font:inherit}.adminFormGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.adminCheckbox{display:flex!important;align-items:center;gap:9px;text-transform:none!important}.adminCheckbox input{width:18px!important;margin:0!important}.adminActions{display:flex;gap:9px;margin-top:16px}.adminActions button{flex:1}.adminShell .dangerButton{background:#a83b35}.templateList{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;align-content:start}.templateList article{display:grid;gap:6px;padding:16px;border:1px solid #dce7e2;border-radius:13px}.templateList article.inactive{opacity:.55}.templateList article>span{justify-self:start;padding:5px 8px;border-radius:999px;background:#e4f0eb;color:#17624e;font-size:10px;font-weight:800}.templateList article>strong{font-size:17px}.templateList article>small{color:#6e8079}.templateList article>p{min-height:38px;margin:2px 0;color:#5d7169;font-size:12px}.templateList article>div{display:flex;gap:8px}.templateList button,.recordList button{padding:8px 11px}.adminShell .dangerLink{background:transparent;color:#a83b35;border:1px solid #e3b7b4}.recordTools{display:flex;gap:8px}.recordTools input{min-width:240px;margin:0}.bookingRecordEditor{margin:16px 0}.bookingRecordEditor>label{margin-top:12px}.recordList article{display:grid;grid-template-columns:1fr auto auto auto}.statusBadge{padding:6px 9px;border-radius:999px;background:#e2ebe7;font-weight:800}.status-confirmed{background:#d8efdf!important;color:#17623b!important}.status-closed{background:#ececec!important}.status-contacted{background:#fff0c9!important;color:#7e5e0d!important}@media(max-width:900px){.adminWorkspace{grid-template-columns:1fr}.templateWorkspace{grid-template-columns:1fr}.templateList{grid-template-columns:1fr 1fr}.recordList article{grid-template-columns:1fr auto}.recordList article>button{justify-self:start}.recordTools{align-items:stretch;flex-direction:column}.recordTools input{min-width:0}}@media(max-width:560px){.adminShell{padding:24px 16px}.templateList,.adminFormGrid{grid-template-columns:1fr}.adminActions{flex-direction:column}.recordList article{grid-template-columns:1fr}.adminShell header>div:last-child{flex-wrap:wrap}}
+
+/* World Best Forms Overrides */
+form input:not([type="checkbox"]):not([type="radio"]), form select, form textarea, .mrzPreview input, .mrzPreview select {
+    font-size: 16px !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    border: 1px solid #d1d9d6 !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 2px 8px rgba(0,0,0,0.04) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: #fdfdfd !important;
+}
+
+form input:not([type="checkbox"]):not([type="radio"]):focus, form select:focus, form textarea:focus, .mrzPreview input:focus, .mrzPreview select:focus {
+    border-color: #00664f !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 4px rgba(0, 102, 79, 0.15) !important;
+    background: #ffffff !important;
+    outline: none !important;
+}
+
+form button[type="submit"], form button.primary, .bookNowButton, .scanButton, .passportScanner button, .flightForm button {
+    font-size: 16px !important;
+    padding: 16px 24px !important;
+    border-radius: 12px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 102, 79, 0.2) !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px !important;
+}
+
+form button[type="submit"]:hover, form button.primary:hover, .bookNowButton:hover, .scanButton:hover, .passportScanner button:hover, .flightForm button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0, 102, 79, 0.25) !important;
+    filter: brightness(1.05) !important;
+}
+
+form button[type="submit"]:active, form button.primary:active, .bookNowButton:active, .scanButton:active, .passportScanner button:active, .flightForm button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 8px rgba(0, 102, 79, 0.15) !important;
+}
+
+form label, .mrzPreview label {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #4a5d55 !important;
+    margin-bottom: 8px !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    opacity: 0.8 !important;
+}
+
+.flightResults article button {
+    font-size: 14px !important;
+    padding: 12px 20px !important;
+    border-radius: 10px !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.flightResults article button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 102, 79, 0.15) !important;
+    filter: brightness(1.05) !important;
+}
