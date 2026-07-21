@@ -3,7 +3,7 @@
 :root { --ink:#16372f; --green:#1d5a48; --mint:#dcefe7; --sand:#f6f1e7; --gold:#b98535; --cream:#fbf9f4; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
-body { margin:0; color:var(--ink); background:var(--cream); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { margin:0; color:var(--ink); background: url('/makkah-panorama.jpg') no-repeat center center fixed; background-size: cover; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, textarea { font:inherit; }
 button { cursor:pointer; }
 .promoBar{min-height:34px;background:#173d33;color:#d8e7e1;text-align:center;font-size:10px;letter-spacing:.3px;padding:9px 18px}.promoBar span{color:#edc575;text-transform:uppercase;font-weight:800;letter-spacing:1.2px;margin-right:12px}.promoBar a{color:white;font-weight:800;margin-left:12px}
@@ -204,6 +204,15 @@ form button[type="submit"], form button.primary, .bookNowButton, .scanButton, .p
     margin-top: 8px !important;
 }
 
+/* Make the specific search button smaller and not full width */
+.flightForm button[type="submit"], .hotelForm button[type="submit"], .umrahForm button[type="submit"] {
+    width: auto !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    display: inline-block !important;
+    margin: 8px auto 0 !important;
+}
+
 form button[type="submit"]:hover, form button.primary:hover, .bookNowButton:hover, .scanButton:hover, .passportScanner button:hover, .flightForm button:hover, .hotelForm button:hover, .umrahForm button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(0, 102, 79, 0.25) !important;
@@ -241,5 +250,6 @@ form label, .mrzPreview label {
     box-shadow: 0 4px 12px rgba(0, 102, 79, 0.15) !important;
     filter: brightness(1.05) !important;
 }
+
 
 /* removed */
