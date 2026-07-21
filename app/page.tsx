@@ -245,14 +245,8 @@ export default function Home() {
         setStatus("PDF converted. Reading MRZ…");
       }
 
-      // Load the browser ESM build from CDN to avoid bundling the Node.js worker_threads version
-      const TESSERACT_VERSION = "7.0.0";
-      const CDN_BASE = `https://cdn.jsdelivr.net/npm/tesseract.js@${TESSERACT_VERSION}`;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Tesseract = await import(/* @vite-ignore */ `${CDN_BASE}/dist/tesseract.esm.min.js`) as any;
-      worker = await Tesseract.createWorker("eng", 1, {
-        workerPath: `${CDN_BASE}/dist/worker.min.js`,
-        langPath: "https://tessdata.projectnaptha.com/4.0.0",
+      const { createWorker } = await import("tesseract.js");
+      worker = await createWorker("eng", 1, {
         logger: (m: { status: string; progress: number }) => {
           if (m.status === "recognizing text") {
             setStatus(`Reading passport… ${Math.round(m.progress * 100)}%`);
