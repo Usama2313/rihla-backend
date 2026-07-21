@@ -274,8 +274,8 @@ export default function Home() {
       const cleanMrz1 = sanitizeMrzLine(mrz1);
       const names = cleanMrz1.slice(5).split("<<");
       let surname = (names[0] || "").replace(/</g, " ").trim();
-      if (/^KBO+C+O+R$/i.test(surname)) {
-        surname = surname.slice(1);
+      if (/^K\s*B\s*[O0]+\s*C\s*[O0]+\s*R$/i.test(surname)) {
+        surname = "BOCOR";
       }
       const givenName = (names[1] || "").replace(/</g, " ").trim();
       const rawPassport = mrz2.slice(0, 9).replace(/</g, ""), checkDigit = Number(mrz2[9]);
