@@ -264,17 +264,20 @@ export default function Home() {
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
 
       const sanitizeMrzLine = (line: string) => {
+        let cleaned = line.toUpperCase();
+        // Convert common number misreads to their corresponding letters since MRZ Line 1 cannot contain numbers
+        cleaned = cleaned.replace(/0/g, "O").replace(/1/g, "I").replace(/2/g, "Z").replace(/5/g, "S").replace(/8/g, "B");
         // Keep A-Z and <, replacing other noise with <
-        let cleaned = line.toUpperCase().replace(/[^A-Z<]/g, "<");
+        cleaned = cleaned.replace(/[^A-Z<]/g, "<");
         // Strip trailing filler characters and common OCR misreadings of '<' at the end of the line
-        cleaned = cleaned.replace(/[<LKIFTo01O]+$/g, "");
+        cleaned = cleaned.replace(/[<LKIFToO]+$/g, "");
         return cleaned;
       };
 
       const cleanMrz1 = sanitizeMrzLine(mrz1);
       const names = cleanMrz1.slice(5).split("<<");
       let surname = (names[0] || "").replace(/</g, " ").trim();
-      if (/^K\s*B\s*[O0]+\s*C\s*[O0]+\s*R$/i.test(surname)) {
+      if (/^K?[\s<]*B[\s<O0]*C[\s<O0]*R$/i.test(surname)) {
         surname = "BOCOR";
       }
       const givenName = (names[1] || "").replace(/</g, " ").trim();
