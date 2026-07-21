@@ -3,7 +3,7 @@
 :root { --ink:#16372f; --green:#1d5a48; --mint:#dcefe7; --sand:#f6f1e7; --gold:#b98535; --cream:#fbf9f4; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
-body { margin:0; color:var(--ink); background: url('/makkah-panorama.jpg') no-repeat center center fixed; background-size: cover; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { margin:0; color:var(--ink); background: url('/makkah-madinah-warm.png') no-repeat center center fixed; background-size: cover; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, textarea { font:inherit; }
 button { cursor:pointer; }
 .promoBar{min-height:34px;background:#173d33;color:#d8e7e1;text-align:center;font-size:10px;letter-spacing:.3px;padding:9px 18px}.promoBar span{color:#edc575;text-transform:uppercase;font-weight:800;letter-spacing:1.2px;margin-right:12px}.promoBar a{color:white;font-weight:800;margin-left:12px}
@@ -17,7 +17,7 @@ button { cursor:pointer; }
 .headerActions { display:flex; align-items:center; gap:10px; }
 .iconButton,.avatar { border:1px solid #d9ded9; background:white; border-radius:50%; width:38px; height:38px; color:var(--ink); font-weight:700; font-size:11px; }
 .avatar { background:#e8b85c; color:#543b12; border:0; }
-.hero { min-height:630px; padding:74px max(6vw,28px) 66px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(420px,.8fr); gap:7vw; align-items:center; background: linear-gradient(to right, rgba(251,249,244,0.9) 0%, rgba(251,249,244,0.7) 40%, rgba(251,249,244,0.1) 100%), url('/makkah-panorama.jpg') no-repeat center center; background-size: cover; overflow:hidden; position:relative; }
+.hero { min-height:630px; padding:74px max(6vw,28px) 66px; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(420px,.8fr); gap:7vw; align-items:center; background: linear-gradient(to right, rgba(251,249,244,0.9) 0%, rgba(251,249,244,0.7) 40%, rgba(251,249,244,0.1) 100%), url('/makkah-madinah-warm.png') no-repeat center center; background-size: cover; overflow:hidden; position:relative; }
 .heroDecor { position:absolute; border:1px solid rgba(29,90,72,.16); border-radius:50%; }
 .heroDecorOne { width:520px; height:520px; left:-300px; bottom:-300px; }
 .heroDecorTwo { width:320px; height:320px; right:-180px; top:-120px; }
