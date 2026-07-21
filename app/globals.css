@@ -241,3 +241,25 @@ form label, .mrzPreview label {
     box-shadow: 0 4px 12px rgba(0, 102, 79, 0.15) !important;
     filter: brightness(1.05) !important;
 }
+
+/* Makkah and Madinah Background Integration */
+body {
+    background: url('/makkah-madinah-bg.png') no-repeat center center fixed !important;
+    background-size: cover !important;
+}
+
+.hero {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+.supplierSearch {
+    background: rgba(240, 235, 225, 0.75) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.journeyStrip {
+    background: rgba(0, 102, 79, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+}
+

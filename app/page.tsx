@@ -41,7 +41,7 @@ export default function Home() {
     { from: "bot", text: "Assalamu alaikum! I’m Noor, your free travel guide. Ask me about Umrah, destinations, budgets or family travel." },
   ]);
   const [flightSearch, setFlightSearch] = useState({ from: "BAH", to: "JED", departure: "", returnDate: "", adults: 1, children: 0, infants: 0, cabin: "Econom", currency: "USD" });
-  const [flightMode, setFlightMode] = useState<"Round trip" | "One way" | "Multi-city">("Round trip");
+  const [flightMode, setFlightMode] = useState<"One way" | "Round trip" | "Multi-city">("One way");
   const [multiCityLegs, setMultiCityLegs] = useState<FlightLeg[]>([{ from: "BAH", to: "JED", date: "" }, { from: "JED", to: "DXB", date: "" }]);
   const [directOnly, setDirectOnly] = useState(false);
   const [resultStops, setResultStops] = useState<"all" | "direct" | "one" | "twoPlus">("all");
@@ -380,7 +380,7 @@ export default function Home() {
           <button className={activeService === "umrah" ? "selected" : ""} onClick={() => setActiveService("umrah")} role="tab"><b>03</b><span>☾</span><div><strong>Umrah</strong><small>Packages and visa</small></div></button>
         </div>
 
-        {activeService === "flights" && <div className="servicePanel"><div className="panelTitle"><div className="journeyTypeTabs" role="group" aria-label="Journey type">{(["Round trip", "One way", "Multi-city"] as const).map((mode) => <button type="button" key={mode} className={flightMode === mode ? "selected" : ""} onClick={() => { setFlightMode(mode); if (mode !== "Round trip") setFlightSearch({ ...flightSearch, returnDate: "" }); }}>{mode}</button>)}</div><small>Live supplier search powered by Rihla AI</small><span>XML Agency connected</span></div><form className="flightForm enhancedFlightForm" onSubmit={searchFlights}>
+        {activeService === "flights" && <div className="servicePanel"><div className="panelTitle"><div className="journeyTypeTabs" role="group" aria-label="Journey type">{(["One way", "Round trip", "Multi-city"] as const).map((mode) => <button type="button" key={mode} className={flightMode === mode ? "selected" : ""} onClick={() => { setFlightMode(mode); if (mode !== "Round trip") setFlightSearch({ ...flightSearch, returnDate: "" }); }}>{mode}</button>)}</div><small>Live supplier search powered by Rihla AI</small><span>XML Agency connected</span></div><form className="flightForm enhancedFlightForm" onSubmit={searchFlights}>
           {flightMode !== "Multi-city" ? <>
             <label>From · IATA code<input required maxLength={3} list="rihla-airports" value={flightSearch.from} onChange={(e) => setFlightSearch({ ...flightSearch, from: e.target.value.toUpperCase().replace(/[^A-Z]/g, "") })} placeholder="BAH" /><small>{airportName(flightSearch.from)}</small></label>
             <label>To · IATA code<input required maxLength={3} list="rihla-airports" value={flightSearch.to} onChange={(e) => setFlightSearch({ ...flightSearch, to: e.target.value.toUpperCase().replace(/[^A-Z]/g, "") })} placeholder="JED" /><small>{airportName(flightSearch.to)}</small></label>
