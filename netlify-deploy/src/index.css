@@ -3346,6 +3346,30 @@ footer>div a {
   background: url('/makkah-madinah-bg.png') center/cover no-repeat fixed
 }
 
+.animatedBrandText {
+  display: inline-block;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #0874ea, #37c77a, #5834d6, #0874ea);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerGradient 3s linear infinite, brandFloat 4s ease-in-out infinite;
+  margin-bottom: 8px;
+}
+
+@keyframes shimmerGradient {
+  to { background-position: 300% center; }
+}
+
+@keyframes brandFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 .showingResults .resultsPageHeader {
   order: 1;
   align-items: center;
