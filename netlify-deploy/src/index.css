@@ -6120,3 +6120,6 @@ body,
     text-align: left;
   }
 }
+/* Force dark text for high visibility */
+#direct-booking p, #direct-booking strong, #direct-booking h2, #direct-booking h3, #direct-booking small, #direct-booking label, #direct-booking li, #direct-booking b, #direct-booking dd, #direct-booking dt, .passportScanner p, .passportScanner strong, .passportScanner small, .bookingSummary { color: #061f39 !important; }
+
