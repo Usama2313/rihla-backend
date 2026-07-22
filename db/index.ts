@@ -12,7 +12,12 @@ const mockStore = {
     { id: 1, place: "AlUla", country: "Saudi Arabia", tag: "Desert wonder", days: "4 days", color: "sunset", sortOrder: 1 },
     { id: 2, place: "Istanbul", country: "Türkiye", tag: "Culture & cuisine", days: "5 days", color: "blue", sortOrder: 2 },
     { id: 3, place: "Bali", country: "Indonesia", tag: "Island reset", days: "7 days", color: "green", sortOrder: 3 }
-  ]
+  ],
+  passengers: [] as any[],
+  visaApplications: [] as any[],
+  inventory: [] as any[],
+  suppliers: [] as any[],
+  integrations: [] as any[]
 };
 
 const mockDB = {
@@ -52,8 +57,43 @@ const mockDB = {
              mockStore.destinations = mockStore.destinations.filter(d => d.id !== args[0]);
           } else if (query.includes('UPDATE site_settings')) {
              mockStore.settings[0] = { ...mockStore.settings[0], business_name: args[0], whatsapp: args[1], facebook: args[2], instagram: args[3], x: args[4], linkedin: args[5], tiktok: args[6], youtube: args[7], snapchat: args[8], updated_at: args[9] };
+          } else if (query.includes('INSERT INTO passengers')) {
+             mockStore.passengers.push({ id: mockStore.passengers.length + 1, booking_id: args[0], name: args[1], passport: args[2], nationality: args[3], created_at: args[4] });
+          } else if (query.includes('UPDATE passengers')) {
+             const id = args[args.length - 1]; const idx = mockStore.passengers.findIndex(x => x.id === id);
+             if (idx >= 0) mockStore.passengers[idx] = { ...mockStore.passengers[idx], booking_id: args[0], name: args[1], passport: args[2], nationality: args[3], created_at: args[4] };
+          } else if (query.includes('DELETE FROM passengers')) {
+             mockStore.passengers = mockStore.passengers.filter(x => x.id !== args[0]);
+          } else if (query.includes('INSERT INTO visa_applications')) {
+             mockStore.visaApplications.push({ id: mockStore.visaApplications.length + 1, passenger_id: args[0], status: args[1], type: args[2], submitted_at: args[3] });
+          } else if (query.includes('UPDATE visa_applications')) {
+             const id = args[args.length - 1]; const idx = mockStore.visaApplications.findIndex(x => x.id === id);
+             if (idx >= 0) mockStore.visaApplications[idx] = { ...mockStore.visaApplications[idx], passenger_id: args[0], status: args[1], type: args[2], submitted_at: args[3] };
+          } else if (query.includes('DELETE FROM visa_applications')) {
+             mockStore.visaApplications = mockStore.visaApplications.filter(x => x.id !== args[0]);
+          } else if (query.includes('INSERT INTO inventory')) {
+             mockStore.inventory.push({ id: mockStore.inventory.length + 1, type: args[0], name: args[1], stock: args[2], details: args[3] });
+          } else if (query.includes('UPDATE inventory')) {
+             const id = args[args.length - 1]; const idx = mockStore.inventory.findIndex(x => x.id === id);
+             if (idx >= 0) mockStore.inventory[idx] = { ...mockStore.inventory[idx], type: args[0], name: args[1], stock: args[2], details: args[3] };
+          } else if (query.includes('DELETE FROM inventory')) {
+             mockStore.inventory = mockStore.inventory.filter(x => x.id !== args[0]);
+          } else if (query.includes('INSERT INTO suppliers')) {
+             mockStore.suppliers.push({ id: mockStore.suppliers.length + 1, name: args[0], type: args[1], balance: args[2], status: args[3] });
+          } else if (query.includes('UPDATE suppliers')) {
+             const id = args[args.length - 1]; const idx = mockStore.suppliers.findIndex(x => x.id === id);
+             if (idx >= 0) mockStore.suppliers[idx] = { ...mockStore.suppliers[idx], name: args[0], type: args[1], balance: args[2], status: args[3] };
+          } else if (query.includes('DELETE FROM suppliers')) {
+             mockStore.suppliers = mockStore.suppliers.filter(x => x.id !== args[0]);
+          } else if (query.includes('INSERT INTO integrations')) {
+             mockStore.integrations.push({ id: mockStore.integrations.length + 1, name: args[0], status: args[1], api_key: args[2] });
+          } else if (query.includes('UPDATE integrations')) {
+             const id = args[args.length - 1]; const idx = mockStore.integrations.findIndex(x => x.id === id);
+             if (idx >= 0) mockStore.integrations[idx] = { ...mockStore.integrations[idx], name: args[0], status: args[1], api_key: args[2] };
+          } else if (query.includes('DELETE FROM integrations')) {
+             mockStore.integrations = mockStore.integrations.filter(x => x.id !== args[0]);
           }
-          return { success: true, meta: { last_row_id: mockStore.templates.length } };
+          return { success: true, meta: { last_row_id: 1 } };
         },
         all: async () => {
           if (query.includes('site_settings')) return { results: mockStore.settings };
@@ -61,6 +101,11 @@ const mockDB = {
           if (query.includes('umrah_templates')) return { results: mockStore.templates };
           if (query.includes('portal_users')) return { results: mockStore.accounts };
           if (query.includes('destinations')) return { results: mockStore.destinations };
+          if (query.includes('passengers')) return { results: mockStore.passengers };
+          if (query.includes('visa_applications')) return { results: mockStore.visaApplications };
+          if (query.includes('inventory')) return { results: mockStore.inventory };
+          if (query.includes('suppliers')) return { results: mockStore.suppliers };
+          if (query.includes('integrations')) return { results: mockStore.integrations };
           return { results: [] };
         },
         first: async () => {
@@ -75,6 +120,11 @@ const mockDB = {
         if (query.includes('umrah_templates')) return { results: mockStore.templates };
         if (query.includes('portal_users')) return { results: mockStore.accounts };
         if (query.includes('destinations')) return { results: mockStore.destinations };
+        if (query.includes('passengers')) return { results: mockStore.passengers };
+        if (query.includes('visa_applications')) return { results: mockStore.visaApplications };
+        if (query.includes('inventory')) return { results: mockStore.inventory };
+        if (query.includes('suppliers')) return { results: mockStore.suppliers };
+        if (query.includes('integrations')) return { results: mockStore.integrations };
         return { results: [] };
       },
       first: async () => {
@@ -110,6 +160,11 @@ export async function ensureDb(): Promise<any> {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS auth_sessions_user_idx ON auth_sessions (user_id, expires_at)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS auth_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, action TEXT NOT NULL, created_at TEXT NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS auth_attempts_rate_idx ON auth_attempts (phone, action, created_at)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS passengers (id INTEGER PRIMARY KEY AUTOINCREMENT, booking_id TEXT NOT NULL, name TEXT NOT NULL, passport TEXT NOT NULL, nationality TEXT NOT NULL, created_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS visa_applications (id INTEGER PRIMARY KEY AUTOINCREMENT, passenger_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', type TEXT NOT NULL, submitted_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, name TEXT NOT NULL, stock INTEGER NOT NULL DEFAULT 0, details TEXT NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS suppliers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, type TEXT NOT NULL, balance TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active')"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS integrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'disconnected', api_key TEXT)"),
   ]);
   return env.DB;
 }

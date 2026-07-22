@@ -16,14 +16,19 @@ export async function GET() {
   if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
   // @ts-ignore
 const db: any = await ensureDb();
-  const [settings, records, templates, accounts, destinations] = await Promise.all([
+  const [settings, records, templates, accounts, destinations, passengers, visaApplications, inventory, suppliers, integrations] = await Promise.all([
     db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
     db.prepare("SELECT id, type, status, customer_name AS customerName, email, phone, details_json AS detailsJson, created_at AS createdAt FROM booking_records ORDER BY created_at DESC LIMIT 500").all(),
     db.prepare("SELECT id, name, badge, nights, hotel, price, active, sort_order AS sortOrder, updated_at AS updatedAt FROM umrah_templates ORDER BY sort_order, id").all(),
     db.prepare("SELECT id, phone, role, status, created_at AS createdAt, last_login_at AS lastLoginAt FROM portal_users ORDER BY created_at DESC LIMIT 500").all(),
     db.prepare("SELECT id, place, country, tag, days, color, sort_order AS sortOrder FROM destinations ORDER BY sort_order, id").all(),
+    db.prepare("SELECT * FROM passengers ORDER BY created_at DESC").all(),
+    db.prepare("SELECT * FROM visa_applications ORDER BY submitted_at DESC").all(),
+    db.prepare("SELECT * FROM inventory").all(),
+    db.prepare("SELECT * FROM suppliers").all(),
+    db.prepare("SELECT * FROM integrations").all(),
   ]);
-  return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results, destinations: destinations.results });
+  return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results, destinations: destinations.results, passengers: passengers.results, visaApplications: visaApplications.results, inventory: inventory.results, suppliers: suppliers.results, integrations: integrations.results });
 }
 
 export async function POST(request: Request) {
@@ -39,6 +44,61 @@ export async function POST(request: Request) {
     }
     const result = await db.prepare("INSERT INTO destinations (place, country, tag, days, color, sort_order) VALUES (?, ?, ?, ?, ?, ?)")
       .bind(body.place, body.country, body.tag, body.days, body.color, Number(body.sortOrder || 0)).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  if (body.resource === "passenger") {
+    if (body.id) {
+      await db.prepare("UPDATE passengers SET booking_id = ?, name = ?, passport = ?, nationality = ?, created_at = ? WHERE id = ?")
+        .bind(body.booking_id, body.name, body.passport, body.nationality, body.created_at, Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO passengers (booking_id, name, passport, nationality, created_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(body.booking_id, body.name, body.passport, body.nationality, new Date().toISOString()).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  if (body.resource === "visa_application") {
+    if (body.id) {
+      await db.prepare("UPDATE visa_applications SET passenger_id = ?, status = ?, type = ?, submitted_at = ? WHERE id = ?")
+        .bind(Number(body.passenger_id), body.status, body.type, body.submitted_at, Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO visa_applications (passenger_id, status, type, submitted_at) VALUES (?, ?, ?, ?)")
+      .bind(Number(body.passenger_id), body.status, body.type, new Date().toISOString()).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  if (body.resource === "inventory") {
+    if (body.id) {
+      await db.prepare("UPDATE inventory SET type = ?, name = ?, stock = ?, details = ? WHERE id = ?")
+        .bind(body.type, body.name, Number(body.stock), body.details, Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO inventory (type, name, stock, details) VALUES (?, ?, ?, ?)")
+      .bind(body.type, body.name, Number(body.stock), body.details).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  if (body.resource === "supplier") {
+    if (body.id) {
+      await db.prepare("UPDATE suppliers SET name = ?, type = ?, balance = ?, status = ? WHERE id = ?")
+        .bind(body.name, body.type, body.balance, body.status, Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO suppliers (name, type, balance, status) VALUES (?, ?, ?, ?)")
+      .bind(body.name, body.type, body.balance, body.status).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  if (body.resource === "integration") {
+    if (body.id) {
+      await db.prepare("UPDATE integrations SET name = ?, status = ?, api_key = ? WHERE id = ?")
+        .bind(body.name, body.status, body.api_key, Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO integrations (name, status, api_key) VALUES (?, ?, ?)")
+      .bind(body.name, body.status, body.api_key).run();
     return NextResponse.json({ id: result.meta.last_row_id, saved: true });
   }
 
@@ -94,6 +154,11 @@ export async function DELETE(request: Request) {
   if (body.resource === "template") await db.prepare("DELETE FROM umrah_templates WHERE id = ?").bind(Number(body.id)).run();
   else if (body.resource === "destination") await db.prepare("DELETE FROM destinations WHERE id = ?").bind(Number(body.id)).run();
   else if (body.resource === "booking") await db.prepare("DELETE FROM booking_records WHERE id = ?").bind(String(body.id || "")).run();
+  else if (body.resource === "passenger") await db.prepare("DELETE FROM passengers WHERE id = ?").bind(Number(body.id)).run();
+  else if (body.resource === "visa_application") await db.prepare("DELETE FROM visa_applications WHERE id = ?").bind(Number(body.id)).run();
+  else if (body.resource === "inventory") await db.prepare("DELETE FROM inventory WHERE id = ?").bind(Number(body.id)).run();
+  else if (body.resource === "supplier") await db.prepare("DELETE FROM suppliers WHERE id = ?").bind(Number(body.id)).run();
+  else if (body.resource === "integration") await db.prepare("DELETE FROM integrations WHERE id = ?").bind(Number(body.id)).run();
   else return NextResponse.json({ error: "Invalid resource." }, { status: 400 });
   return NextResponse.json({ deleted: true });
 }

@@ -7,19 +7,45 @@ type Settings = { businessName: string; whatsapp: string; facebook: string; inst
 type RecordItem = { id: string; type: string; status: string; customerName: string; email?: string; phone?: string; detailsJson: string; createdAt: string };
 type TemplateItem = { id?: number; name: string; badge: string; nights: string; hotel: string; price: string; active: boolean | number; sortOrder: number };
 type DestinationItem = { id?: number; place: string; country: string; tag: string; days: string; color: string; sortOrder: number };
+type PassengerItem = { id?: number; booking_id: string; name: string; passport: string; nationality: string; created_at: string };
+type VisaAppItem = { id?: number; passenger_id: number; status: string; type: string; submitted_at: string };
+type InventoryItem = { id?: number; type: string; name: string; stock: number; details: string };
+type SupplierItem = { id?: number; name: string; type: string; balance: string; status: string };
+type IntegrationItem = { id?: number; name: string; status: string; api_key: string };
+
 const emptySettings: Settings = { businessName: "Rihla", whatsapp: "", facebook: "", instagram: "", x: "", linkedin: "", tiktok: "", youtube: "", snapchat: "" };
 const emptyTemplate: TemplateItem = { name: "", badge: "Umrah package", nights: "", hotel: "", price: "", active: true, sortOrder: 0 };
 const emptyDestination: DestinationItem = { place: "", country: "", tag: "", days: "", color: "blue", sortOrder: 0 };
+const emptyPassenger: PassengerItem = { booking_id: "", name: "", passport: "", nationality: "", created_at: "" };
+const emptyVisaApp: VisaAppItem = { passenger_id: 0, status: "pending", type: "tourist", submitted_at: "" };
+const emptyInventory: InventoryItem = { type: "hotel", name: "", stock: 0, details: "" };
+const emptySupplier: SupplierItem = { name: "", type: "agency", balance: "0", status: "active" };
+const emptyIntegration: IntegrationItem = { name: "", status: "disconnected", api_key: "" };
 
 export default function AdminDashboard({ owner }: { owner: string }) {
-  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "packages" | "destinations" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNewBooking, setShowNewBooking] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [settings, setSettings] = useState(emptySettings);
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [destinations, setDestinations] = useState<DestinationItem[]>([]);
+  const [passengers, setPassengers] = useState<PassengerItem[]>([]);
+  const [visaApps, setVisaApps] = useState<VisaAppItem[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationItem[]>([]);
+  
   const [templateDraft, setTemplateDraft] = useState<TemplateItem>(emptyTemplate);
   const [destinationDraft, setDestinationDraft] = useState<DestinationItem>(emptyDestination);
+  const [passengerDraft, setPassengerDraft] = useState<PassengerItem>(emptyPassenger);
+  const [visaAppDraft, setVisaAppDraft] = useState<VisaAppItem>(emptyVisaApp);
+  const [inventoryDraft, setInventoryDraft] = useState<InventoryItem>(emptyInventory);
+  const [supplierDraft, setSupplierDraft] = useState<SupplierItem>(emptySupplier);
+  const [integrationDraft, setIntegrationDraft] = useState<IntegrationItem>(emptyIntegration);
   const [bookingDraft, setBookingDraft] = useState<RecordItem | null>(null);
+  
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("Loading saved data...");
 
@@ -35,6 +61,11 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     setRecords(data.records || []);
     setTemplates((data.templates || []).map((item: TemplateItem) => ({ ...item, active: Boolean(item.active) })));
     setDestinations(data.destinations || []);
+    setPassengers(data.passengers || []);
+    setVisaApps(data.visaApplications || []);
+    setInventory(data.inventory || []);
+    setSuppliers(data.suppliers || []);
+    setIntegrations(data.integrations || []);
     setMessage("");
   };
   
@@ -52,13 +83,20 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     if (!response.ok) return setMessage(data.error || "Template could not be saved.");
     setTemplateDraft(emptyTemplate); await load(); setMessage("Umrah template saved.");
   };
-  const saveDestination = async (event: React.FormEvent) => {
-    event.preventDefault(); setMessage("Saving Destination...");
-    const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource: "destination", ...destinationDraft }) });
-    const data = await response.json();
-    if (!response.ok) return setMessage(data.error || "Destination could not be saved.");
-    setDestinationDraft(emptyDestination); await load(); setMessage("Destination saved.");
+  const saveGeneric = async (resource: string, payload: any, setter: any, empty: any) => {
+    setMessage(`Saving ${resource}...`);
+    const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, ...payload }) });
+    if (!response.ok) return setMessage((await response.json()).error || `${resource} could not be saved.`);
+    setter(empty); await load(); setMessage(`${resource} saved.`);
   };
+
+  const saveDestination = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("destination", destinationDraft, setDestinationDraft, emptyDestination); };
+  const savePassenger = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("passenger", passengerDraft, setPassengerDraft, emptyPassenger); };
+  const saveVisaApp = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("visa_application", visaAppDraft, setVisaAppDraft, emptyVisaApp); };
+  const saveInventory = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("inventory", inventoryDraft, setInventoryDraft, emptyInventory); };
+  const saveSupplier = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("supplier", supplierDraft, setSupplierDraft, emptySupplier); };
+  const saveIntegration = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("integration", integrationDraft, setIntegrationDraft, emptyIntegration); };
+
   const saveBooking = async (event: React.FormEvent) => {
     event.preventDefault(); if (!bookingDraft) return;
     try { JSON.parse(bookingDraft.detailsJson || "{}"); } catch { return setMessage("Booking details must be valid JSON."); }
@@ -66,31 +104,41 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     if (!response.ok) return setMessage("Booking could not be saved.");
     setBookingDraft(null); await load(); setMessage("Booking updated.");
   };
-  const deleteItem = async (resource: "template" | "booking" | "destination", id: number | string) => {
+
+  const deleteItem = async (resource: string, id: number | string) => {
     if (!window.confirm(`Delete this ${resource}? This cannot be undone.`)) return;
     const response = await fetch("/api/admin", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, id }) });
     if (!response.ok) return setMessage(`Could not delete ${resource}.`);
     if (resource === "template" && templateDraft.id === id) setTemplateDraft(emptyTemplate);
     if (resource === "destination" && destinationDraft.id === id) setDestinationDraft(emptyDestination);
+    if (resource === "passenger" && passengerDraft.id === id) setPassengerDraft(emptyPassenger);
+    if (resource === "visa_application" && visaAppDraft.id === id) setVisaAppDraft(emptyVisaApp);
+    if (resource === "inventory" && inventoryDraft.id === id) setInventoryDraft(emptyInventory);
+    if (resource === "supplier" && supplierDraft.id === id) setSupplierDraft(emptySupplier);
+    if (resource === "integration" && integrationDraft.id === id) setIntegrationDraft(emptyIntegration);
     if (resource === "booking" && bookingDraft?.id === id) setBookingDraft(null);
     await load(); setMessage(`${resource.charAt(0).toUpperCase() + resource.slice(1)} deleted.`);
-  };
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), settings, umrahTemplates: templates, bookingRecords: records, destinations }, null, 2)], { type: "application/json" });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `rihla-backup-${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(link.href);
   };
-  const logout = async () => {
-    await fetch("/api/admin/login", { method: "DELETE" });
-    window.location.reload();
-  };
+  
+  const logout = () => { document.cookie = "rihla_admin_auth=; path=/; max-age=0"; window.location.reload(); };
 
   const filteredRecords = useMemo(() => records.filter((item) => `${item.id} ${item.customerName} ${item.email || ""} ${item.phone || ""} ${item.type} ${item.status}`.toLowerCase().includes(query.toLowerCase())), [records, query]);
   
-  // Calculate stats for overview
-  const totalBookings = records.length;
+  // Calculate dynamic metrics for Overview
+  const activeBookings = records.filter(r => r.status !== "closed").length;
+  const totalTravellers = records.reduce((acc, r) => acc + (JSON.parse(r.detailsJson || "{}").passengers || 1), 0);
+  const pendingVisasCount = visaApps.filter(v => v.status === "pending").length;
+  const grossValue = records.reduce((acc, r) => {
+    const details = JSON.parse(r.detailsJson || "{}");
+    const priceStr = details.flight?.price || details.price || "0";
+    return acc + Number(String(priceStr).replace(/[^0-9.-]+/g,""));
+  }, 0);
+
   const bookingsThisMonth = records.filter(r => new Date(r.createdAt).getMonth() === new Date().getMonth()).length;
   const pendingCount = records.filter(r => r.status === 'new').length;
-  const grossValue = records.length * 1540; // Dummy calculation for display
 
   return (
     <div className="r1-layout">
@@ -156,15 +204,69 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           </div>
           <div className="r1-top-actions">
             <div className="r1-notification"></div>
-            <div className="r1-profile">
+            <div className="r1-profile" style={{ position: "relative", cursor: "pointer" }} onClick={() => setShowProfileMenu(!showProfileMenu)}>
               <div className="r1-profile-avatar">{owner.slice(0,2).toUpperCase() || "AD"}</div>
               <div className="r1-profile-info">
                 <strong>{owner}</strong>
-                <span>Administrator</span>
+                <span>Administrator ▼</span>
               </div>
+              {showProfileMenu && (
+                <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 8, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, width: 160, padding: 8 }}>
+                  <button className="r1-btn-secondary" style={{ width: "100%", textAlign: "left", marginBottom: 4 }} onClick={() => { setShowProfileEdit(true); setShowProfileMenu(false); }}>Edit Profile</button>
+                  <button className="r1-btn-danger" style={{ width: "100%", textAlign: "left" }} onClick={logout}>Sign out</button>
+                </div>
+              )}
             </div>
           </div>
         </header>
+
+        {showProfileEdit && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyCenter: "center" }}>
+            <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 400, maxWidth: "90%" }}>
+              <h3>Admin Profile</h3>
+              <p style={{ color: "#6b7280", fontSize: 14 }}>Logged in as: <strong>{owner}</strong></p>
+              <div className="r1-form-grid" style={{ gridTemplateColumns: "1fr", margin: "16px 0" }}>
+                <div><label className="r1-form-label">Role</label><input className="r1-input" disabled value="Administrator" /></div>
+              </div>
+              <div className="r1-editor-actions">
+                <button className="r1-btn-secondary" onClick={() => setShowProfileEdit(false)}>Close</button>
+                <button className="r1-btn-danger" onClick={logout}>Logout</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showNewBooking && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyCenter: "center" }}>
+            <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 500, maxWidth: "90%" }}>
+              <h3>+ New Booking Entry</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const customerName = (form.elements.namedItem("custName") as HTMLInputElement).value;
+                const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+                const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
+                const type = (form.elements.namedItem("type") as HTMLSelectElement).value;
+                const ref = `MAN-${Date.now().toString().slice(-6)}`;
+                await fetch("/api/records", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, reference: ref, customerName, email, phone, details: { manual: true } }) });
+                setShowNewBooking(false);
+                await load();
+                setMessage("Manual booking created successfully!");
+              }}>
+                <div className="r1-form-grid" style={{ gridTemplateColumns: "1fr", gap: 12, margin: "16px 0" }}>
+                  <div><label className="r1-form-label">Customer Name</label><input name="custName" className="r1-input" required placeholder="Full Name" /></div>
+                  <div><label className="r1-form-label">Email Address</label><input name="email" type="email" className="r1-input" placeholder="email@example.com" /></div>
+                  <div><label className="r1-form-label">Phone Number</label><input name="phone" className="r1-input" placeholder="+966 ..." /></div>
+                  <div><label className="r1-form-label">Booking Type</label><select name="type" className="r1-input"><option value="umrah">Umrah</option><option value="flight">Flight</option><option value="hotel">Hotel</option></select></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Create Booking</button>
+                  <button type="button" className="r1-btn-secondary" onClick={() => setShowNewBooking(false)}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <div className="r1-content">
           {message && <div className="r1-message">{message}</div>}
@@ -179,7 +281,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                 </div>
                 <div className="r1-page-actions">
                   <button className="r1-btn-secondary" onClick={exportBackup}>↓ Export report</button>
-                  <button className="r1-btn-primary" onClick={() => setActiveTab("bookings")}>+ New booking</button>
+                  <button className="r1-btn-primary" onClick={() => setShowNewBooking(true)}>+ New booking</button>
                 </div>
               </header>
 
@@ -305,53 +407,32 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td><strong>RO-<br/>24071</strong></td>
-                      <td>
-                        <div className="r1-agency-cell">
-                          <div className="r1-agency-avatar" style={{ background: '#d1fae5', color: '#065f46' }}>AS</div>
-                          <div className="r1-agency-info">
-                            <strong>Al Safwa Travel</strong>
-                            <span>Essential Umrah</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>12</td>
-                      <td>04 Aug<br/>2026</td>
-                      <td><strong>SAR 39,480</strong></td>
-                      <td><span className="r1-status-badge r1-status-success">CONFIRMED</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>RO-<br/>24072</strong></td>
-                      <td>
-                        <div className="r1-agency-cell">
-                          <div className="r1-agency-avatar" style={{ background: '#dcfce7', color: '#166534' }}>BT</div>
-                          <div className="r1-agency-info">
-                            <strong>Baba Travel<br/>Tourism</strong>
-                            <span>Golden Journey</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>8</td>
-                      <td>08 Aug<br/>2026</td>
-                      <td><strong>SAR 43,840</strong></td>
-                      <td><span className="r1-status-badge r1-status-due">DOCUMENTS</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>RO-<br/>24073</strong></td>
-                      <td>
-                        <div className="r1-agency-cell">
-                          <div className="r1-agency-avatar" style={{ background: '#d1fae5', color: '#065f46' }}>AV</div>
-                          <div className="r1-agency-info">
-                            <strong>Atlas Voyages</strong>
-                          </div>
-                        </div>
-                      </td>
-                      <td>23</td>
-                      <td>12 Aug<br/>2026</td>
-                      <td><strong>SAR 43,470</strong></td>
-                      <td><span className="r1-status-badge r1-status-danger">PAYMENT DUE</span></td>
-                    </tr>
+                    {records.slice(0, 5).map((r) => {
+                      const details = JSON.parse(r.detailsJson || "{}");
+                      return (
+                        <tr key={r.id}>
+                          <td><strong>{r.id}</strong></td>
+                          <td>
+                            <div className="r1-agency-cell">
+                              <div className="r1-agency-avatar" style={{ background: '#d1fae5', color: '#065f46' }}>{r.customerName.slice(0,2).toUpperCase()}</div>
+                              <div className="r1-agency-info">
+                                <strong>{r.customerName}</strong>
+                                <span>{r.type.toUpperCase()} Booking</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{details.passengers || 1}</td>
+                          <td>{new Date(r.createdAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td><strong>{details.flight?.price || details.price || "SAR 3,500"}</strong></td>
+                          <td><span className={`r1-status-badge ${r.status === 'confirmed' ? 'r1-status-success' : 'r1-status-due'}`}>{r.status.toUpperCase()}</span></td>
+                        </tr>
+                      );
+                    })}
+                    {!records.length && (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: "center", color: "#6b7280" }}>No upcoming departure records available.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -502,6 +583,202 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                 </div>
                 <button type="submit" className="r1-btn-primary">Save settings</button>
               </form>
+            </div>
+          )}
+          {activeTab === "passengers" && (
+            <div className="r1-section-card">
+              <div className="r1-section-header">
+                <div>
+                  <h2>Passenger Profiles</h2>
+                  <p>Manage traveller passport and personal records</p>
+                </div>
+                <button className="r1-btn-primary" onClick={() => setPassengerDraft(emptyPassenger)}>+ New passenger</button>
+              </div>
+              <form onSubmit={savePassenger} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <h3>{passengerDraft.id ? "Edit Passenger" : "Add Passenger"}</h3>
+                <div className="r1-form-grid">
+                  <div><label className="r1-form-label">Booking Reference</label><input className="r1-input" required value={passengerDraft.booking_id} onChange={(e) => setPassengerDraft({ ...passengerDraft, booking_id: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Full Name</label><input className="r1-input" required value={passengerDraft.name} onChange={(e) => setPassengerDraft({ ...passengerDraft, name: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Passport No.</label><input className="r1-input" required value={passengerDraft.passport} onChange={(e) => setPassengerDraft({ ...passengerDraft, passport: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Nationality</label><input className="r1-input" required value={passengerDraft.nationality} onChange={(e) => setPassengerDraft({ ...passengerDraft, nationality: e.target.value })} /></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Passenger</button>
+                  {passengerDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("passenger", passengerDraft.id!)}>Delete</button>}
+                </div>
+              </form>
+              <table className="r1-table">
+                <thead><tr><th>NAME</th><th>BOOKING</th><th>PASSPORT</th><th>NATIONALITY</th><th>ACTIONS</th></tr></thead>
+                <tbody>
+                  {passengers.map((p) => (
+                    <tr key={p.id}>
+                      <td><strong>{p.name}</strong></td>
+                      <td>{p.booking_id}</td>
+                      <td>{p.passport}</td>
+                      <td>{p.nationality}</td>
+                      <td><button className="r1-btn-secondary" onClick={() => setPassengerDraft(p)}>Edit</button></td>
+                    </tr>
+                  ))}
+                  {!passengers.length && <tr><td colSpan={5} style={{ textAlign: "center" }}>No passengers recorded.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "visa" && (
+            <div className="r1-section-card">
+              <div className="r1-section-header">
+                <div>
+                  <h2>Visa Processing</h2>
+                  <p>Track Saudi Umrah and Tourist visa applications</p>
+                </div>
+                <button className="r1-btn-primary" onClick={() => setVisaAppDraft(emptyVisaApp)}>+ New Visa Case</button>
+              </div>
+              <form onSubmit={saveVisaApp} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <h3>{visaAppDraft.id ? "Edit Visa Case" : "New Visa Case"}</h3>
+                <div className="r1-form-grid">
+                  <div><label className="r1-form-label">Passenger ID</label><input type="number" className="r1-input" required value={visaAppDraft.passenger_id} onChange={(e) => setVisaAppDraft({ ...visaAppDraft, passenger_id: Number(e.target.value) })} /></div>
+                  <div><label className="r1-form-label">Visa Type</label><select className="r1-input" value={visaAppDraft.type} onChange={(e) => setVisaAppDraft({ ...visaAppDraft, type: e.target.value })}><option value="umrah">Umrah Visa</option><option value="tourist">Tourist Visa</option></select></div>
+                  <div><label className="r1-form-label">Status</label><select className="r1-input" value={visaAppDraft.status} onChange={(e) => setVisaAppDraft({ ...visaAppDraft, status: e.target.value })}><option value="pending">Pending Review</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Visa Case</button>
+                  {visaAppDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("visa_application", visaAppDraft.id!)}>Delete</button>}
+                </div>
+              </form>
+              <table className="r1-table">
+                <thead><tr><th>ID</th><th>PASSENGER ID</th><th>TYPE</th><th>STATUS</th><th>SUBMITTED</th><th>ACTIONS</th></tr></thead>
+                <tbody>
+                  {visaApps.map((v) => (
+                    <tr key={v.id}>
+                      <td><strong>#VS-{v.id}</strong></td>
+                      <td>Passenger #{v.passenger_id}</td>
+                      <td>{v.type.toUpperCase()}</td>
+                      <td><span className={`r1-status-badge ${v.status === 'approved' ? 'r1-status-success' : 'r1-status-due'}`}>{v.status.toUpperCase()}</span></td>
+                      <td>{new Date(v.submitted_at).toLocaleDateString()}</td>
+                      <td><button className="r1-btn-secondary" onClick={() => setVisaAppDraft(v)}>Edit</button></td>
+                    </tr>
+                  ))}
+                  {!visaApps.length && <tr><td colSpan={6} style={{ textAlign: "center" }}>No visa applications found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {(activeTab === "hotel-inventory" || activeTab === "visa-inventory" || activeTab === "supplier-inventory") && (
+            <div className="r1-section-card">
+              <div className="r1-section-header">
+                <div>
+                  <h2>{activeTab.replace("-", " ").toUpperCase()}</h2>
+                  <p>Manage stock, rooms, and quota limits</p>
+                </div>
+                <button className="r1-btn-primary" onClick={() => setInventoryDraft({ ...emptyInventory, type: activeTab.split("-")[0] })}>+ Add Stock Item</button>
+              </div>
+              <form onSubmit={saveInventory} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <h3>{inventoryDraft.id ? "Edit Stock Item" : "Add Stock Item"}</h3>
+                <div className="r1-form-grid">
+                  <div><label className="r1-form-label">Resource Name</label><input className="r1-input" required value={inventoryDraft.name} onChange={(e) => setInventoryDraft({ ...inventoryDraft, name: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Available Stock / Units</label><input type="number" className="r1-input" required value={inventoryDraft.stock} onChange={(e) => setInventoryDraft({ ...inventoryDraft, stock: Number(e.target.value) })} /></div>
+                  <div><label className="r1-form-label">Details / Notes</label><input className="r1-input" value={inventoryDraft.details} onChange={(e) => setInventoryDraft({ ...inventoryDraft, details: e.target.value })} /></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Item</button>
+                  {inventoryDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("inventory", inventoryDraft.id!)}>Delete</button>}
+                </div>
+              </form>
+              <table className="r1-table">
+                <thead><tr><th>NAME</th><th>TYPE</th><th>STOCK UNITS</th><th>DETAILS</th><th>ACTIONS</th></tr></thead>
+                <tbody>
+                  {inventory.filter(i => i.type === activeTab.split("-")[0]).map((i) => (
+                    <tr key={i.id}>
+                      <td><strong>{i.name}</strong></td>
+                      <td>{i.type.toUpperCase()}</td>
+                      <td>{i.stock} units</td>
+                      <td>{i.details}</td>
+                      <td><button className="r1-btn-secondary" onClick={() => setInventoryDraft(i)}>Edit</button></td>
+                    </tr>
+                  ))}
+                  {!inventory.filter(i => i.type === activeTab.split("-")[0]).length && <tr><td colSpan={5} style={{ textAlign: "center" }}>No inventory records for this section.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "suppliers" && (
+            <div className="r1-section-card">
+              <div className="r1-section-header">
+                <div>
+                  <h2>Suppliers & Agencies</h2>
+                  <p>Manage external contracts and accounts</p>
+                </div>
+                <button className="r1-btn-primary" onClick={() => setSupplierDraft(emptySupplier)}>+ Add Supplier</button>
+              </div>
+              <form onSubmit={saveSupplier} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <h3>{supplierDraft.id ? "Edit Supplier" : "Add Supplier"}</h3>
+                <div className="r1-form-grid">
+                  <div><label className="r1-form-label">Supplier Name</label><input className="r1-input" required value={supplierDraft.name} onChange={(e) => setSupplierDraft({ ...supplierDraft, name: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Category</label><input className="r1-input" required value={supplierDraft.type} onChange={(e) => setSupplierDraft({ ...supplierDraft, type: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Outstanding Balance</label><input className="r1-input" value={supplierDraft.balance} onChange={(e) => setSupplierDraft({ ...supplierDraft, balance: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Status</label><select className="r1-input" value={supplierDraft.status} onChange={(e) => setSupplierDraft({ ...supplierDraft, status: e.target.value })}><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Supplier</button>
+                  {supplierDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("supplier", supplierDraft.id!)}>Delete</button>}
+                </div>
+              </form>
+              <table className="r1-table">
+                <thead><tr><th>NAME</th><th>TYPE</th><th>BALANCE</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+                <tbody>
+                  {suppliers.map((s) => (
+                    <tr key={s.id}>
+                      <td><strong>{s.name}</strong></td>
+                      <td>{s.type}</td>
+                      <td>{s.balance}</td>
+                      <td><span className={`r1-status-badge ${s.status === 'active' ? 'r1-status-success' : 'r1-status-danger'}`}>{s.status.toUpperCase()}</span></td>
+                      <td><button className="r1-btn-secondary" onClick={() => setSupplierDraft(s)}>Edit</button></td>
+                    </tr>
+                  ))}
+                  {!suppliers.length && <tr><td colSpan={5} style={{ textAlign: "center" }}>No suppliers found.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === "integrations" && (
+            <div className="r1-section-card">
+              <div className="r1-section-header">
+                <div>
+                  <h2>System Integrations</h2>
+                  <p>Manage XML Suppliers, Flight APIs and Gateways</p>
+                </div>
+                <button className="r1-btn-primary" onClick={() => setIntegrationDraft(emptyIntegration)}>+ Add Integration</button>
+              </div>
+              <form onSubmit={saveIntegration} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <h3>{integrationDraft.id ? "Edit Integration" : "Add Integration"}</h3>
+                <div className="r1-form-grid">
+                  <div><label className="r1-form-label">Integration Name</label><input className="r1-input" required value={integrationDraft.name} onChange={(e) => setIntegrationDraft({ ...integrationDraft, name: e.target.value })} /></div>
+                  <div><label className="r1-form-label">API Key / Credentials</label><input className="r1-input" value={integrationDraft.api_key} onChange={(e) => setIntegrationDraft({ ...integrationDraft, api_key: e.target.value })} /></div>
+                  <div><label className="r1-form-label">Status</label><select className="r1-input" value={integrationDraft.status} onChange={(e) => setIntegrationDraft({ ...integrationDraft, status: e.target.value })}><option value="connected">Connected</option><option value="disconnected">Disconnected</option></select></div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Integration</button>
+                  {integrationDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("integration", integrationDraft.id!)}>Delete</button>}
+                </div>
+              </form>
+              <table className="r1-table">
+                <thead><tr><th>NAME</th><th>API KEY</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+                <tbody>
+                  {integrations.map((ig) => (
+                    <tr key={ig.id}>
+                      <td><strong>{ig.name}</strong></td>
+                      <td>{ig.api_key ? "••••••••" + ig.api_key.slice(-4) : "None"}</td>
+                      <td><span className={`r1-status-badge ${ig.status === 'connected' ? 'r1-status-success' : 'r1-status-due'}`}>{ig.status.toUpperCase()}</span></td>
+                      <td><button className="r1-btn-secondary" onClick={() => setIntegrationDraft(ig)}>Edit</button></td>
+                    </tr>
+                  ))}
+                  {!integrations.length && <tr><td colSpan={4} style={{ textAlign: "center" }}>No external integrations configured.</td></tr>}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
