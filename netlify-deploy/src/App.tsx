@@ -191,7 +191,10 @@ export default function App() {
     if (!/^\+[1-9]\d{7,14}$/.test(bookingForm.phone.replace(/[\s()-]/g, ""))) { setBookingError("Enter the mobile number with country code, for example +97334451249."); return; }
     setBookingLoading(true);
     try {
-      const response = await fetch("/api/flights/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...selectedFlight, email: bookingForm.email, phone: bookingForm.phone, passengers: [{ givenName: bookingForm.fullName, surname: bookingForm.surname, birthDate: bookingForm.birthDate, nationality: bookingForm.nationality, passport: bookingForm.passport, passportExpiry: bookingForm.passportExpiry, gender: bookingForm.gender }] }) });
+      const paxCount = Number(flightSearch.adults) + Number(flightSearch.children) + Number(flightSearch.infants);
+      const paxTemplate = { givenName: bookingForm.fullName, surname: bookingForm.surname, birthDate: bookingForm.birthDate, nationality: bookingForm.nationality, passport: bookingForm.passport, passportExpiry: bookingForm.passportExpiry, gender: bookingForm.gender };
+      const passengers = Array(paxCount).fill(null).map((_, i) => ({ ...paxTemplate, givenName: i === 0 ? bookingForm.fullName : `${bookingForm.fullName} ${i}`, passport: i === 0 ? bookingForm.passport : `${bookingForm.passport}${i}` }));
+      const response = await fetch("/api/flights/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...selectedFlight, email: bookingForm.email, phone: bookingForm.phone, passengers }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error);
       const reference = data.pnr || data.supplierBookingId || data.reference;
       setBookingRef(reference); setBookingMeta({ bookId: data.bookId, bookGuid: data.bookGuid, currency: data.currency }); setSupplierStatus({ status: "Reservation accepted", pnr: data.pnr, testMode: data.testMode }); setBookingSubmitted(true);
@@ -284,7 +287,11 @@ export default function App() {
         const swaps: Record<string, string[]> = { "0": ["O", "Q", "D"], "1": ["I", "L", "Z"], "2": ["Z"], "5": ["S"], "6": ["G"], "8": ["B"], O: ["0"], I: ["1"], L: ["1"], Z: ["2", "1"], S: ["5"], G: ["6"], B: ["8"] };
         for (let index = 0; index < passport.length && !valid(passport); index++) for (const replacement of swaps[passport[index]] || []) { const candidate = passport.slice(0, index) + replacement + passport.slice(index + 1); if (valid(candidate)) { passport = candidate; break; } }
       }
-      const nationality = mrz2.slice(10, 13), dob = mrz2.slice(13, 19), gender = mrz2.slice(20, 21) === "F" ? "Female" : "Male", expiry = mrz2.slice(21, 27);
+      const sanitizeDate = (d: string) => d.replace(/O/g, "0").replace(/I/g, "1").replace(/L/g, "1").replace(/Z/g, "2").replace(/S/g, "5").replace(/B/g, "8").replace(/G/g, "6").replace(/</g, "0");
+      let nationality = mrz2.slice(10, 13).replace(/0/g, "O").replace(/1/g, "I").replace(/2/g, "Z").replace(/5/g, "S").replace(/8/g, "B");
+      if (nationality.startsWith("D<")) nationality = "DEU";
+      nationality = nationality.replace(/</g, "");
+      const dob = sanitizeDate(mrz2.slice(13, 19)), gender = mrz2.slice(20, 21) === "F" ? "Female" : "Male", expiry = sanitizeDate(mrz2.slice(21, 27));
       const isoDate = (v: string, future = false) => { const yy = Number(v.slice(0, 2)), year = future ? 2000 + yy : (yy > new Date().getFullYear() % 100 ? 1900 + yy : 2000 + yy); return `${year}-${v.slice(2,4)}-${v.slice(4,6)}`; };
       const passportDetails = { surname, nationality, passport, birthDate: isoDate(dob), passportExpiry: isoDate(expiry, true), gender };
       if (target === "umrah") setLead((current) => ({ ...current, name: givenName, ...passportDetails }));
@@ -327,7 +334,7 @@ export default function App() {
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Rihla home">
           <span className="brandMark">R</span>
-          <span>rihla</span>
+          <span>Rihla</span>
         </a>
         <nav className="desktopNav" aria-label="Main navigation">
           {navItems.map((item) => (
@@ -377,7 +384,7 @@ export default function App() {
           <button className={activeService === "umrah" ? "selected" : ""} onClick={() => setActiveService("umrah")} role="tab"><b>03</b><span>☾</span><div><strong>Umrah</strong><small>Packages and visa</small></div></button>
         </div>
 
-        {activeService === "flights" && <div className="servicePanel"><div className="panelTitle"><div className="journeyTypeTabs" role="group" aria-label="Journey type">{(["Round trip", "One way", "Multi-city"] as const).map((mode) => <button type="button" key={mode} className={flightMode === mode ? "selected" : ""} onClick={() => { setFlightMode(mode); if (mode !== "Round trip") setFlightSearch({ ...flightSearch, returnDate: "" }); }}>{mode}</button>)}</div><small>Live supplier search powered by Rihla AI</small><span>XML Agency connected</span></div><form className="flightForm enhancedFlightForm" onSubmit={searchFlights}>
+        {activeService === "flights" && <div className="servicePanel"><div className="panelTitle"><div className="journeyTypeTabs" role="group" aria-label="Journey type">{(["Round trip", "One way", "Multi-city"] as const).map((mode) => <button type="button" key={mode} className={flightMode === mode ? "selected" : ""} onClick={() => { setFlightMode(mode); if (mode !== "Round trip") setFlightSearch({ ...flightSearch, returnDate: "" }); }}>{mode}</button>)}</div></div><form className="flightForm enhancedFlightForm" onSubmit={searchFlights}>
           {flightMode !== "Multi-city" ? <>
             <label>From · IATA code<input required maxLength={3} list="rihla-airports" value={flightSearch.from} onChange={(e) => setFlightSearch({ ...flightSearch, from: e.target.value.toUpperCase().replace(/[^A-Z]/g, "") })} placeholder="BAH" /><small>{airportName(flightSearch.from)}</small></label>
             <label>To · IATA code<input required maxLength={3} list="rihla-airports" value={flightSearch.to} onChange={(e) => setFlightSearch({ ...flightSearch, to: e.target.value.toUpperCase().replace(/[^A-Z]/g, "") })} placeholder="JED" /><small>{airportName(flightSearch.to)}</small></label>
@@ -457,7 +464,7 @@ export default function App() {
       </section>
 
       <footer className="siteFooter">
-        <div className="footerBrand"><span className="brandMark">R</span><span>rihla</span></div>
+        <div className="footerBrand"><span className="brandMark">R</span><span>Rihla</span></div>
         <p>AI-powered travel search · Flights · Hotels · Umrah</p>
         <p><small>Rihla is a travel search and booking enquiry platform. Fares are sourced from connected suppliers. All prices are indicative until confirmed by the supplier.</small></p>
         <div className="footerLinks">
