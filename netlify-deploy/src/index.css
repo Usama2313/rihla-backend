@@ -2353,7 +2353,7 @@ footer>div a {
   }
 }
 
-.partnerBookingView>:not(#direct-booking):not(.whatsappFloat):not(.chatLauncher):not(.chatPanel) {
+.partnerBookingView>:not(#direct-booking):not(.whatsappFloat):not(.chatLauncher):not(.chatPanel):not(.topbar) {
   display: none !important
 }
 
@@ -2361,15 +2361,16 @@ footer>div a {
   min-height: 100vh;
   background: url('/makkah-madinah-bg.png') center/cover no-repeat fixed;
   padding-top: 70px;
-  padding-bottom: 70px
+  padding-bottom: 70px;
+  color: #061f39
 }
 
 .partnerBack {
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, .2);
-  background: rgba(255, 255, 255, .08);
-  color: white;
+  border: 1px solid rgba(6, 31, 57, .2);
+  background: rgba(6, 31, 57, .08);
+  color: #061f39;
   border-radius: 999px;
   padding: 9px 13px;
   margin-bottom: 22px;
@@ -2379,7 +2380,7 @@ footer>div a {
 }
 
 .partnerBack:hover {
-  background: rgba(255, 255, 255, .15)
+  background: rgba(6, 31, 57, .15)
 }
 
 @media(max-width:850px) {
@@ -3323,7 +3324,8 @@ footer>div a {
   display: none
 }
 
-.flightResultsView>.topbar {
+.flightResultsView>.topbar,
+.partnerBookingView>.topbar {
   position: relative;
   background: #061f39;
   color: white;
@@ -3331,7 +3333,9 @@ footer>div a {
 }
 
 .flightResultsView>.topbar .brand,
-.flightResultsView>.topbar .desktopNav button {
+.flightResultsView>.topbar .desktopNav button,
+.partnerBookingView>.topbar .brand,
+.partnerBookingView>.topbar .desktopNav button {
   color: white
 }
 
@@ -3633,10 +3637,6 @@ footer>div a {
 }
 
 @media(max-width:760px) {
-  .flightResultsView>.topbar {
-    display: none
-  }
-
   .supplierSearch.showingResults {
     padding: 0 14px 40px
   }
@@ -6060,7 +6060,8 @@ body,
 @media (max-width: 700px) {
 
   .searchHomeView>.topbar,
-  .flightResultsView>.topbar {
+  .flightResultsView>.topbar,
+  .partnerBookingView>.topbar {
     display: flex !important;
     background: rgba(249, 251, 255, 0.95) !important;
     backdrop-filter: blur(20px);
