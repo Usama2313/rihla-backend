@@ -71,3 +71,12 @@ export const authAttempts = sqliteTable("auth_attempts", {
   action: text("action").notNull(),
   createdAt: text("created_at").notNull(),
 });
+export const destinations = sqliteTable('destinations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  place: text('place').notNull(),
+  country: text('country').notNull(),
+  tag: text('tag').notNull(),
+  days: text('days').notNull(),
+  color: text('color').notNull(),
+  sortOrder: integer('sort_order').default(0),
+});

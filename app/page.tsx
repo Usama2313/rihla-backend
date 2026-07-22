@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const trips = [
+const defaultTrips = [
   { place: "AlUla", country: "Saudi Arabia", tag: "Desert wonder", days: "4 days", color: "sunset" },
   { place: "Istanbul", country: "Türkiye", tag: "Culture & cuisine", days: "5 days", color: "blue" },
   { place: "Bali", country: "Indonesia", tag: "Island reset", days: "7 days", color: "green" },
@@ -54,6 +54,7 @@ export default function Home() {
   const [umrahShown, setUmrahShown] = useState(false);
   const [activeService, setActiveService] = useState<"flights" | "hotels" | "umrah">("flights");
   const [hotelSearch, setHotelSearch] = useState({ city: "Makkah", checkIn: "", checkOut: "", guests: 2 });
+  const [trips, setTrips] = useState(defaultTrips);
   const [hotelShown, setHotelShown] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState("");
   const [bookingForm, setBookingForm] = useState({ type: "Customer", fullName: "", surname: "", email: "", phone: "", nationality: "BHR", passengers: 1, notes: "", birthDate: "", passport: "", passportExpiry: "", gender: "Male" });
@@ -84,7 +85,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/settings").then((response) => response.json()).then((data) => { setSocialAccounts(data); if (Array.isArray(data.umrahTemplates) && data.umrahTemplates.length) setUmrahTemplates(data.umrahTemplates); }).catch(() => undefined);
+    fetch("/api/settings").then((response) => response.json()).then((data) => { 
+      setSocialAccounts(data); 
+      if (Array.isArray(data.umrahTemplates) && data.umrahTemplates.length) setUmrahTemplates(data.umrahTemplates); 
+      if (Array.isArray(data.destinations) && data.destinations.length) setTrips(data.destinations); 
+    }).catch(() => undefined);
   }, []);
 
   useEffect(() => {

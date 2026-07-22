@@ -257,3 +257,199 @@ form label, .mrzPreview label {
 /* Force dark text for high visibility */
 #direct-booking p, #direct-booking strong, #direct-booking h2, #direct-booking h3, #direct-booking small, #direct-booking label, #direct-booking li, #direct-booking b, #direct-booking dd, #direct-booking dt, .passportScanner p, .passportScanner strong, .passportScanner small, .bookingSummary { color: #061f39 !important; }
 
+/* Admin Sidebar Redesign */
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background: #f2f6f3;
+}
+
+.adminSidebar {
+  width: 260px;
+  background: #173b31;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+
+.sidebarHeader {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1f4a3e;
+}
+.sidebarHeader h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  margin: 0;
+}
+.closeSidebar {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.sidebarNav {
+  padding: 24px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.sidebarNav button {
+  background: transparent;
+  border: none;
+  color: #a7c8bd;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+.sidebarNav button:hover {
+  background: #1f4a3e;
+  color: white;
+}
+.sidebarNav button.active {
+  background: #2a6152;
+  color: white;
+}
+
+.sidebarFooter {
+  padding: 24px;
+  border-top: 1px solid #1f4a3e;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sidebarFooter small {
+  color: #a7c8bd;
+}
+.sidebarFooter button {
+  background: #d8efdf;
+  color: #17623b;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.adminMain {
+  flex: 1;
+  margin-left: 260px;
+  padding: 40px;
+  max-width: 1200px;
+}
+
+.mobileHeader {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.mobileHeader button {
+  background: #17624e;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mobileHeader h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+.contentHeader h1 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  margin: 0 0 8px 0;
+  color: #173b31;
+}
+.contentHeader p {
+  margin: 0;
+  color: #6b7e77;
+}
+.contentHeader button {
+  background: #17624e;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.metricCard {
+  background: white;
+  border: 1px solid #dbe7e1;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+.metricCard h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #6b7e77;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.metricCard strong {
+  font-size: 36px;
+  color: #173b31;
+  font-family: var(--font-display);
+}
+
+.chartCard {
+  background: white;
+  padding: 24px;
+}
+
+@media (max-width: 900px) {
+  .adminSidebar {
+    transform: translateX(-100%);
+  }
+  .adminSidebar.open {
+    transform: translateX(0);
+  }
+  .closeSidebar {
+    display: block;
+  }
+  .adminMain {
+    margin-left: 0;
+    padding: 24px 16px;
+  }
+  .mobileHeader {
+    display: flex;
+  }
+  .contentHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+

@@ -19,6 +19,7 @@
     "pdfjs-dist": "^6.1.200",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "recharts": "^3.10.0",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {

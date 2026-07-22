@@ -6,28 +6,45 @@ const OWNER_EMAIL = "mirali200@gmail.com";
 const socialFields = ["whatsapp", "facebook", "instagram", "x", "linkedin", "tiktok", "youtube", "snapchat"] as const;
 
 async function authorized() {
-  return true;
+  const cookieStore = await headers();
+  // We use headers().get("cookie") to check cookies securely in route handlers
+  const cookieHeader = cookieStore.get("cookie") || "";
+  return cookieHeader.includes("rihla_admin_auth=true");
 }
 
 export async function GET() {
   if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
   // @ts-ignore
 const db: any = await ensureDb();
-  const [settings, records, templates, accounts] = await Promise.all([
+  const [settings, records, templates, accounts, destinations] = await Promise.all([
     db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
     db.prepare("SELECT id, type, status, customer_name AS customerName, email, phone, details_json AS detailsJson, created_at AS createdAt FROM booking_records ORDER BY created_at DESC LIMIT 500").all(),
     db.prepare("SELECT id, name, badge, nights, hotel, price, active, sort_order AS sortOrder, updated_at AS updatedAt FROM umrah_templates ORDER BY sort_order, id").all(),
     db.prepare("SELECT id, phone, role, status, created_at AS createdAt, last_login_at AS lastLoginAt FROM portal_users ORDER BY created_at DESC LIMIT 500").all(),
+    db.prepare("SELECT id, place, country, tag, days, color, sort_order AS sortOrder FROM destinations ORDER BY sort_order, id").all(),
   ]);
-  return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results });
+  return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results, destinations: destinations.results });
 }
 
 export async function POST(request: Request) {
   if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
   const body = await request.json();
+  const db = await ensureDb();
+  
+  if (body.resource === "destination") {
+    if (body.id) {
+      await db.prepare("UPDATE destinations SET place = ?, country = ?, tag = ?, days = ?, color = ?, sort_order = ? WHERE id = ?")
+        .bind(body.place, body.country, body.tag, body.days, body.color, Number(body.sortOrder || 0), Number(body.id)).run();
+      return NextResponse.json({ id: Number(body.id), saved: true });
+    }
+    const result = await db.prepare("INSERT INTO destinations (place, country, tag, days, color, sort_order) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(body.place, body.country, body.tag, body.days, body.color, Number(body.sortOrder || 0)).run();
+    return NextResponse.json({ id: result.meta.last_row_id, saved: true });
+  }
+
+  // Otherwise handle template
   const name = String(body.name || "").trim().slice(0, 120);
   if (!name) return NextResponse.json({ error: "Template name is required." }, { status: 400 });
-  const db = await ensureDb();
   const now = new Date().toISOString();
   if (body.id) {
     await db.prepare("UPDATE umrah_templates SET name = ?, badge = ?, nights = ?, hotel = ?, price = ?, active = ?, sort_order = ?, updated_at = ? WHERE id = ?")
@@ -75,6 +92,7 @@ export async function DELETE(request: Request) {
   const body = await request.json();
   const db = await ensureDb();
   if (body.resource === "template") await db.prepare("DELETE FROM umrah_templates WHERE id = ?").bind(Number(body.id)).run();
+  else if (body.resource === "destination") await db.prepare("DELETE FROM destinations WHERE id = ?").bind(Number(body.id)).run();
   else if (body.resource === "booking") await db.prepare("DELETE FROM booking_records WHERE id = ?").bind(String(body.id || "")).run();
   else return NextResponse.json({ error: "Invalid resource." }, { status: 400 });
   return NextResponse.json({ deleted: true });

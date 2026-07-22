@@ -7,7 +7,12 @@ const mockStore = {
   settings: [{ id: 1, business_name: 'Rihla', whatsapp: '', facebook: '', instagram: '', x: '', linkedin: '', tiktok: '', youtube: '', snapchat: '', updated_at: new Date().toISOString() }],
   records: [] as any[],
   templates: [] as any[],
-  accounts: [] as any[]
+  accounts: [] as any[],
+  destinations: [
+    { id: 1, place: "AlUla", country: "Saudi Arabia", tag: "Desert wonder", days: "4 days", color: "sunset", sortOrder: 1 },
+    { id: 2, place: "Istanbul", country: "Türkiye", tag: "Culture & cuisine", days: "5 days", color: "blue", sortOrder: 2 },
+    { id: 3, place: "Bali", country: "Indonesia", tag: "Island reset", days: "7 days", color: "green", sortOrder: 3 }
+  ]
 };
 
 const mockDB = {
@@ -37,6 +42,14 @@ const mockDB = {
              mockStore.records = mockStore.records.filter(r => r.id !== args[0]);
           } else if (query.includes('DELETE FROM umrah_templates')) {
              mockStore.templates = mockStore.templates.filter(r => r.id !== args[0]);
+          } else if (query.includes('INSERT INTO destinations')) {
+             mockStore.destinations.push({ id: mockStore.destinations.length + 1, place: args[0], country: args[1], tag: args[2], days: args[3], color: args[4], sortOrder: args[5] });
+          } else if (query.includes('UPDATE destinations')) {
+             const id = args[args.length - 1];
+             const idx = mockStore.destinations.findIndex(d => d.id === id);
+             if (idx >= 0) mockStore.destinations[idx] = { id, place: args[0], country: args[1], tag: args[2], days: args[3], color: args[4], sortOrder: args[5] };
+          } else if (query.includes('DELETE FROM destinations')) {
+             mockStore.destinations = mockStore.destinations.filter(d => d.id !== args[0]);
           } else if (query.includes('UPDATE site_settings')) {
              mockStore.settings[0] = { ...mockStore.settings[0], business_name: args[0], whatsapp: args[1], facebook: args[2], instagram: args[3], x: args[4], linkedin: args[5], tiktok: args[6], youtube: args[7], snapchat: args[8], updated_at: args[9] };
           }
@@ -47,6 +60,7 @@ const mockDB = {
           if (query.includes('booking_records')) return { results: mockStore.records };
           if (query.includes('umrah_templates')) return { results: mockStore.templates };
           if (query.includes('portal_users')) return { results: mockStore.accounts };
+          if (query.includes('destinations')) return { results: mockStore.destinations };
           return { results: [] };
         },
         first: async () => {
@@ -60,6 +74,7 @@ const mockDB = {
         if (query.includes('booking_records')) return { results: mockStore.records };
         if (query.includes('umrah_templates')) return { results: mockStore.templates };
         if (query.includes('portal_users')) return { results: mockStore.accounts };
+        if (query.includes('destinations')) return { results: mockStore.destinations };
         return { results: [] };
       },
       first: async () => {
