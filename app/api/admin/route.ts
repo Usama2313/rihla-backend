@@ -131,7 +131,7 @@ export async function PUT(request: Request) {
     const clean = Object.fromEntries(socialFields.map((field) => [field, String(body[field] || "").trim().slice(0, 500)]));
     const adminEmail = String(body.adminEmail || "mirali200@gmail.com").trim().slice(0, 240);
     const adminPassword = String(body.adminPassword || "password").slice(0, 100);
-    const adminAvatar = String(body.adminAvatar || "").slice(0, 300000);
+    const adminAvatar = String(body.adminAvatar || "").slice(0, 5000000);
     const db = await ensureDb();
     await db.prepare("UPDATE site_settings SET business_name = ?, whatsapp = ?, facebook = ?, instagram = ?, x = ?, linkedin = ?, tiktok = ?, youtube = ?, snapchat = ?, admin_email = ?, admin_password = ?, admin_avatar = ?, updated_at = ? WHERE id = 1")
       .bind(String(body.businessName || "Rihla").trim().slice(0, 100), clean.whatsapp, clean.facebook, clean.instagram, clean.x, clean.linkedin, clean.tiktok, clean.youtube, clean.snapchat, adminEmail, adminPassword, adminAvatar, new Date().toISOString()).run();

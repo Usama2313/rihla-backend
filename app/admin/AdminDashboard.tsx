@@ -50,6 +50,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("Loading saved data...");
   const [showProfilePassword, setShowProfilePassword] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ resource: string; id: number | string } | null>(null);
   const [toasts, setToasts] = useState<Array<{ id: number; text: string; type: "success" | "error" | "info" }>>([]);
 
   const addToast = (text: string, type: "success" | "error" | "info" = "info") => {
@@ -173,8 +174,14 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     }
   };
 
-  const deleteItem = async (resource: string, id: number | string) => {
-    if (!window.confirm(`Delete this ${resource}? This cannot be undone.`)) return;
+  const deleteItem = (resource: string, id: number | string) => {
+    setDeleteConfirm({ resource, id });
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirm) return;
+    const { resource, id } = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       const response = await fetch("/api/admin", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, id }) });
       const data = await response.json().catch(() => ({}));
@@ -314,9 +321,11 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "16px 0" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                     {settings.adminAvatar ? (
-                      <img src={settings.adminAvatar} alt="Profile" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
+                      <div style={{ position: "relative", display: "inline-block" }}>
+                        <img src={settings.adminAvatar} alt="Profile" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid #10b981" }} />
+                      </div>
                     ) : (
-                      <div className="r1-profile-avatar" style={{ width: 64, height: 64, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>{settings.adminEmail ? settings.adminEmail.slice(0,2).toUpperCase() : "AD"}</div>
+                      <div className="r1-profile-avatar" style={{ width: 64, height: 64, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "#10b981", color: "#fff", fontWeight: "bold" }}>{settings.adminEmail ? settings.adminEmail.slice(0,2).toUpperCase() : "AD"}</div>
                     )}
                     <div>
                       <label className="r1-form-label" style={{ marginBottom: 4 }}>Profile Picture</label>
@@ -324,12 +333,40 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                         const file = e.target.files?.[0];
                         if (file) {
                           const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setSettings({ ...settings, adminAvatar: reader.result as string });
+                          reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement("canvas");
+                              const ctx = canvas.getContext("2d");
+                              const maxDim = 256;
+                              let width = img.width;
+                              let height = img.height;
+                              if (width > height) {
+                                if (width > maxDim) { height = Math.round((height * maxDim) / width); width = maxDim; }
+                              } else {
+                                if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
+                              }
+                              canvas.width = width;
+                              canvas.height = height;
+                              if (ctx) ctx.drawImage(img, 0, 0, width, height);
+                              const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+                              setSettings((prev) => ({ ...prev, adminAvatar: dataUrl }));
+                            };
+                            img.src = event.target?.result as string;
                           };
                           reader.readAsDataURL(file);
                         }
                       }} />
+                      {settings.adminAvatar && (
+                        <button
+                          type="button"
+                          className="r1-btn-danger"
+                          style={{ fontSize: 11, padding: "4px 8px", marginTop: 6, display: "inline-block" }}
+                          onClick={() => setSettings((prev) => ({ ...prev, adminAvatar: "" }))}
+                        >
+                          Remove Photo
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -882,6 +919,24 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           )}
         </div>
       </div>
+      {deleteConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 990, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 400, maxWidth: "90%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 18, color: "#111827" }}>Confirm Delete</h3>
+            <p style={{ margin: "0 0 20px", color: "#4b5563", fontSize: 14 }}>
+              Are you sure you want to delete this <strong>{deleteConfirm.resource.replace("_", " ")}</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button type="button" className="r1-btn-secondary" onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </button>
+              <button type="button" className="r1-btn-danger" onClick={executeDelete}>
+                Delete Item
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {toasts.length > 0 && (
         <div className="r1-toast-container">
           {toasts.map((toast) => (
