@@ -139,6 +139,10 @@ const mockDB = {
               adminAvatar: s.admin_avatar
             };
           }
+          if (query.includes('passengers')) {
+            const p = mockStore.passengers[mockStore.passengers.length - 1];
+            return p ? { id: p.id, bookingId: p.booking_id, name: p.name, passport: p.passport, nationality: p.nationality, createdAt: p.created_at } : null;
+          }
           return null;
         }
       }),
@@ -166,6 +170,10 @@ const mockDB = {
             adminPassword: s.admin_password,
             adminAvatar: s.admin_avatar
           };
+        }
+        if (query.includes('passengers')) {
+          const p = mockStore.passengers[mockStore.passengers.length - 1];
+          return p ? { id: p.id, bookingId: p.booking_id, name: p.name, passport: p.passport, nationality: p.nationality, createdAt: p.created_at } : null;
         }
         return null;
       }
