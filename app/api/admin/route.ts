@@ -17,7 +17,7 @@ export async function GET() {
   // @ts-ignore
 const db: any = await ensureDb();
   const [settings, records, templates, accounts, destinations, passengers, visaApplications, inventory, suppliers, integrations] = await Promise.all([
-    db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
+    db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, admin_email AS adminEmail, admin_password AS adminPassword, admin_avatar AS adminAvatar, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
     db.prepare("SELECT id, type, status, customer_name AS customerName, email, phone, details_json AS detailsJson, created_at AS createdAt FROM booking_records ORDER BY created_at DESC LIMIT 500").all(),
     db.prepare("SELECT id, name, badge, nights, hotel, price, active, sort_order AS sortOrder, updated_at AS updatedAt FROM umrah_templates ORDER BY sort_order, id").all(),
     db.prepare("SELECT id, phone, role, status, created_at AS createdAt, last_login_at AS lastLoginAt FROM portal_users ORDER BY created_at DESC LIMIT 500").all(),
@@ -120,9 +120,12 @@ export async function PUT(request: Request) {
   if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
   const body = await request.json();
   const clean = Object.fromEntries(socialFields.map((field) => [field, String(body[field] || "").trim().slice(0, 500)]));
+  const adminEmail = String(body.adminEmail || "mirali200@gmail.com").trim().slice(0, 240);
+  const adminPassword = String(body.adminPassword || "password").slice(0, 100);
+  const adminAvatar = String(body.adminAvatar || "").slice(0, 300000);
   const db = await ensureDb();
-  await db.prepare("UPDATE site_settings SET business_name = ?, whatsapp = ?, facebook = ?, instagram = ?, x = ?, linkedin = ?, tiktok = ?, youtube = ?, snapchat = ?, updated_at = ? WHERE id = 1")
-    .bind(String(body.businessName || "Rihla").trim().slice(0, 100), clean.whatsapp, clean.facebook, clean.instagram, clean.x, clean.linkedin, clean.tiktok, clean.youtube, clean.snapchat, new Date().toISOString()).run();
+  await db.prepare("UPDATE site_settings SET business_name = ?, whatsapp = ?, facebook = ?, instagram = ?, x = ?, linkedin = ?, tiktok = ?, youtube = ?, snapchat = ?, admin_email = ?, admin_password = ?, admin_avatar = ?, updated_at = ? WHERE id = 1")
+    .bind(String(body.businessName || "Rihla").trim().slice(0, 100), clean.whatsapp, clean.facebook, clean.instagram, clean.x, clean.linkedin, clean.tiktok, clean.youtube, clean.snapchat, adminEmail, adminPassword, adminAvatar, new Date().toISOString()).run();
   return NextResponse.json({ saved: true });
 }
 

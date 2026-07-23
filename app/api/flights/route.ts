@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as SearchBody;
     const slices = buildSlices(body); const adults = Number(body.adults || 1); const children = Number(body.children || 0); const infants = Number(body.infants || 0);
     if (slices.length < 1 || slices.length > 6 || slices.some((slice) => !/^[A-Z]{3}$/.test(slice.origin) || !/^[A-Z]{3}$/.test(slice.destination) || slice.origin === slice.destination || !slice.departure_date)) return NextResponse.json({ error: "Enter valid, different three-letter IATA airport codes and dates for every flight." }, { status: 400 });
-    if (adults < 1 || adults > 9 || children < 0 || children > 9 - adults || infants < 0 || infants > adults) return NextResponse.json({ error: "Please check the Adult, Child, and Infant numbers." }, { status: 400 });
+    if (adults < 1 || adults > 9 || children < 0 || children > 12 || infants < 0 || infants > 9) return NextResponse.json({ error: "Please check the Adult, Child, and Infant numbers." }, { status: 400 });
     const [xml, duffel] = await Promise.all([searchXml(body), searchDuffel(body)]);
     const offers = [...xml.offers, ...duffel.offers].sort((a, b) => a.currency === b.currency ? a.price - b.price : a.currency.localeCompare(b.currency));
     const sources: SourceStatus[] = [xml.source, duffel.source, { name: "Baba Air", status: "external", offerCount: 0, note: "B2B portal connected; API credentials required for in-page rates" }];

@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 const mockStore = {
-  settings: [{ id: 1, business_name: 'Rihla', whatsapp: '', facebook: '', instagram: '', x: '', linkedin: '', tiktok: '', youtube: '', snapchat: '', updated_at: new Date().toISOString() }],
+  settings: [{ id: 1, business_name: 'Rihla', whatsapp: '', facebook: '', instagram: '', x: '', linkedin: '', tiktok: '', youtube: '', snapchat: '', admin_email: 'mirali200@gmail.com', admin_password: 'password', admin_avatar: '', updated_at: new Date().toISOString() }],
   records: [] as any[],
   templates: [] as any[],
   accounts: [] as any[],
@@ -56,7 +56,11 @@ const mockDB = {
           } else if (query.includes('DELETE FROM destinations')) {
              mockStore.destinations = mockStore.destinations.filter(d => d.id !== args[0]);
           } else if (query.includes('UPDATE site_settings')) {
-             mockStore.settings[0] = { ...mockStore.settings[0], business_name: args[0], whatsapp: args[1], facebook: args[2], instagram: args[3], x: args[4], linkedin: args[5], tiktok: args[6], youtube: args[7], snapchat: args[8], updated_at: args[9] };
+             if (args.length > 11) {
+               mockStore.settings[0] = { ...mockStore.settings[0], business_name: args[0], whatsapp: args[1], facebook: args[2], instagram: args[3], x: args[4], linkedin: args[5], tiktok: args[6], youtube: args[7], snapchat: args[8], admin_email: args[9], admin_password: args[10], admin_avatar: args[11], updated_at: args[12] };
+             } else {
+               mockStore.settings[0] = { ...mockStore.settings[0], business_name: args[0], whatsapp: args[1], facebook: args[2], instagram: args[3], x: args[4], linkedin: args[5], tiktok: args[6], youtube: args[7], snapchat: args[8], updated_at: args[9] };
+             }
           } else if (query.includes('INSERT INTO passengers')) {
              mockStore.passengers.push({ id: mockStore.passengers.length + 1, booking_id: args[0], name: args[1], passport: args[2], nationality: args[3], created_at: args[4] });
           } else if (query.includes('UPDATE passengers')) {
@@ -166,5 +170,14 @@ export async function ensureDb(): Promise<any> {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS suppliers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, type TEXT NOT NULL, balance TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active')"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS integrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'disconnected', api_key TEXT)"),
   ]);
+  try {
+    await env.DB.prepare("ALTER TABLE site_settings ADD COLUMN admin_email TEXT NOT NULL DEFAULT 'mirali200@gmail.com'").run();
+  } catch (e) {}
+  try {
+    await env.DB.prepare("ALTER TABLE site_settings ADD COLUMN admin_password TEXT NOT NULL DEFAULT 'password'").run();
+  } catch (e) {}
+  try {
+    await env.DB.prepare("ALTER TABLE site_settings ADD COLUMN admin_avatar TEXT NOT NULL DEFAULT ''").run();
+  } catch (e) {}
   return env.DB;
 }

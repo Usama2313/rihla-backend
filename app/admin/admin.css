@@ -530,8 +530,38 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
+.r1-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.r1-mobile-nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  color: #1a202c;
+}
+
 @media (max-width: 900px) {
-  .r1-sidebar { display: none; }
+  .r1-sidebar {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 1000;
+  }
+  .r1-sidebar.show {
+    display: flex;
+  }
+  .r1-mobile-nav-toggle { display: block; }
   .r1-metrics-grid { grid-template-columns: 1fr; }
   .r1-page-header { flex-direction: column; gap: 16px; }
   .r1-topbar { padding: 0 16px; }

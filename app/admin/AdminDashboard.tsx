@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./admin.css";
 
-type Settings = { businessName: string; whatsapp: string; facebook: string; instagram: string; x: string; linkedin: string; tiktok: string; youtube: string; snapchat: string };
+type Settings = { businessName: string; whatsapp: string; facebook: string; instagram: string; x: string; linkedin: string; tiktok: string; youtube: string; snapchat: string; adminEmail?: string; adminPassword?: string; adminAvatar?: string };
 type RecordItem = { id: string; type: string; status: string; customerName: string; email?: string; phone?: string; detailsJson: string; createdAt: string };
 type TemplateItem = { id?: number; name: string; badge: string; nights: string; hotel: string; price: string; active: boolean | number; sortOrder: number };
 type DestinationItem = { id?: number; place: string; country: string; tag: string; days: string; color: string; sortOrder: number };
@@ -13,7 +13,7 @@ type InventoryItem = { id?: number; type: string; name: string; stock: number; d
 type SupplierItem = { id?: number; name: string; type: string; balance: string; status: string };
 type IntegrationItem = { id?: number; name: string; status: string; api_key: string };
 
-const emptySettings: Settings = { businessName: "Rihla", whatsapp: "", facebook: "", instagram: "", x: "", linkedin: "", tiktok: "", youtube: "", snapchat: "" };
+const emptySettings: Settings = { businessName: "Rihla", whatsapp: "", facebook: "", instagram: "", x: "", linkedin: "", tiktok: "", youtube: "", snapchat: "", adminEmail: "mirali200@gmail.com", adminPassword: "password", adminAvatar: "" };
 const emptyTemplate: TemplateItem = { name: "", badge: "Umrah package", nights: "", hotel: "", price: "", active: true, sortOrder: 0 };
 const emptyDestination: DestinationItem = { place: "", country: "", tag: "", days: "", color: "blue", sortOrder: 0 };
 const emptyPassenger: PassengerItem = { booking_id: "", name: "", passport: "", nationality: "", created_at: "" };
@@ -28,6 +28,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [settings, setSettings] = useState(emptySettings);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [destinations, setDestinations] = useState<DestinationItem[]>([]);
@@ -105,6 +106,18 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     setBookingDraft(null); await load(); setMessage("Booking updated.");
   };
 
+  const saveProfile = async (event: React.FormEvent) => {
+    event.preventDefault(); setMessage("Saving profile...");
+    const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+    if (response.ok) {
+      setMessage("Profile updated.");
+      setShowProfileEdit(false);
+      await load();
+    } else {
+      setMessage("Could not update profile.");
+    }
+  };
+
   const deleteItem = async (resource: string, id: number | string) => {
     if (!window.confirm(`Delete this ${resource}? This cannot be undone.`)) return;
     const response = await fetch("/api/admin", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, id }) });
@@ -118,12 +131,16 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     if (resource === "integration" && integrationDraft.id === id) setIntegrationDraft(emptyIntegration);
     if (resource === "booking" && bookingDraft?.id === id) setBookingDraft(null);
     await load(); setMessage(`${resource.charAt(0).toUpperCase() + resource.slice(1)} deleted.`);
+  };
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), settings, umrahTemplates: templates, bookingRecords: records, destinations }, null, 2)], { type: "application/json" });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `rihla-backup-${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(link.href);
   };
   
-  const logout = () => { document.cookie = "rihla_admin_auth=; path=/; max-age=0"; window.location.reload(); };
+  const logout = async () => {
+    await fetch("/api/admin/login", { method: "DELETE" });
+    window.location.reload();
+  };
 
   const filteredRecords = useMemo(() => records.filter((item) => `${item.id} ${item.customerName} ${item.email || ""} ${item.phone || ""} ${item.type} ${item.status}`.toLowerCase().includes(query.toLowerCase())), [records, query]);
   
@@ -140,10 +157,16 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   const bookingsThisMonth = records.filter(r => new Date(r.createdAt).getMonth() === new Date().getMonth()).length;
   const pendingCount = records.filter(r => r.status === 'new').length;
 
+  const selectTab = (tab: string) => {
+    setActiveTab(tab);
+    setShowMobileSidebar(false);
+  };
+
   return (
     <div className="r1-layout">
+      {showMobileSidebar && <div className="r1-sidebar-overlay" onClick={() => setShowMobileSidebar(false)}></div>}
       {/* Sidebar */}
-      <aside className="r1-sidebar">
+      <aside className={`r1-sidebar ${showMobileSidebar ? "show" : ""}`}>
         <div className="r1-brand">
           <div className="r1-logo-icon">R1</div>
           <div className="r1-brand-text">RihlaOne</div>
@@ -160,43 +183,41 @@ export default function AdminDashboard({ owner }: { owner: string }) {
 
         <div className="r1-nav-section">
           <div className="r1-nav-title">Operations</div>
-          <button className={`r1-nav-item ${activeTab === "overview" ? "active" : ""}`} onClick={() => setActiveTab("overview")}><span className="r1-nav-icon">⌂</span> Overview</button>
-          <button className={`r1-nav-item ${activeTab === "bookings" ? "active" : ""}`} onClick={() => setActiveTab("bookings")}>
+          <button className={`r1-nav-item ${activeTab === "overview" ? "active" : ""}`} onClick={() => selectTab("overview")}><span className="r1-nav-icon">⌂</span> Overview</button>
+          <button className={`r1-nav-item ${activeTab === "bookings" ? "active" : ""}`} onClick={() => selectTab("bookings")}>
             <span className="r1-nav-icon">▣</span> Bookings <span className="r1-badge-count">12</span>
           </button>
-          <button className={`r1-nav-item ${activeTab === "passengers" ? "active" : ""}`} onClick={() => setActiveTab("passengers")}><span className="r1-nav-icon">♟</span> Passengers</button>
-          <button className={`r1-nav-item ${activeTab === "visa" ? "active" : ""}`} onClick={() => setActiveTab("visa")}>
+          <button className={`r1-nav-item ${activeTab === "passengers" ? "active" : ""}`} onClick={() => selectTab("passengers")}><span className="r1-nav-icon">♟</span> Passengers</button>
+          <button className={`r1-nav-item ${activeTab === "visa" ? "active" : ""}`} onClick={() => selectTab("visa")}>
             <span className="r1-nav-icon">⬖</span> Visa processing <span className="r1-badge-count" style={{ backgroundColor: '#b26829' }}>7</span>
           </button>
-          <button className={`r1-nav-item ${activeTab === "packages" ? "active" : ""}`} onClick={() => setActiveTab("packages")}><span className="r1-nav-icon">≣</span> Package templates</button>
+          <button className={`r1-nav-item ${activeTab === "packages" ? "active" : ""}`} onClick={() => selectTab("packages")}><span className="r1-nav-icon">≣</span> Package templates</button>
         </div>
 
         <div className="r1-nav-section">
           <div className="r1-nav-title">Supply</div>
-          <button className={`r1-nav-item ${activeTab === "hotel-inventory" ? "active" : ""}`} onClick={() => setActiveTab("hotel-inventory")}><span className="r1-nav-icon">▦</span> Hotel inventory</button>
-          <button className={`r1-nav-item ${activeTab === "visa-inventory" ? "active" : ""}`} onClick={() => setActiveTab("visa-inventory")}><span className="r1-nav-icon">⬖</span> Visa inventory</button>
-          <button className={`r1-nav-item ${activeTab === "supplier-inventory" ? "active" : ""}`} onClick={() => setActiveTab("supplier-inventory")}><span className="r1-nav-icon">▦</span> Supplier inventory</button>
-          <button className={`r1-nav-item ${activeTab === "suppliers" ? "active" : ""}`} onClick={() => setActiveTab("suppliers")}><span className="r1-nav-icon">⋈</span> Suppliers</button>
+          <button className={`r1-nav-item ${activeTab === "hotel-inventory" ? "active" : ""}`} onClick={() => selectTab("hotel-inventory")}><span className="r1-nav-icon">▦</span> Hotel inventory</button>
+          <button className={`r1-nav-item ${activeTab === "visa-inventory" ? "active" : ""}`} onClick={() => selectTab("visa-inventory")}><span className="r1-nav-icon">⬖</span> Visa inventory</button>
+          <button className={`r1-nav-item ${activeTab === "supplier-inventory" ? "active" : ""}`} onClick={() => selectTab("supplier-inventory")}><span className="r1-nav-icon">▦</span> Supplier inventory</button>
+          <button className={`r1-nav-item ${activeTab === "suppliers" ? "active" : ""}`} onClick={() => selectTab("suppliers")}><span className="r1-nav-icon">⋈</span> Suppliers</button>
         </div>
 
         <div className="r1-nav-section">
           <div className="r1-nav-title">System</div>
-          <button className={`r1-nav-item ${activeTab === "integrations" ? "active" : ""}`} onClick={() => setActiveTab("integrations")}><span className="r1-nav-icon">⌘</span> Integrations</button>
+          <button className={`r1-nav-item ${activeTab === "integrations" ? "active" : ""}`} onClick={() => selectTab("integrations")}><span className="r1-nav-icon">⌘</span> Integrations</button>
         </div>
 
         <div className="r1-sidebar-footer">
-          <div className="r1-progress">
-            <span>1448 AH season</span>
-            <strong>68% ready</strong>
-            <div className="r1-progress-bar"><div className="r1-progress-fill"></div></div>
-          </div>
           <button className="r1-nav-item" onClick={logout}><span className="r1-nav-icon">?</span> Help centre</button>
         </div>
       </aside>
 
-      {/* Main Container */}
+       {/* Main Container */}
       <div className="r1-main">
         <header className="r1-topbar">
+          <button className="r1-mobile-nav-toggle" onClick={() => setShowMobileSidebar(!showMobileSidebar)} aria-label="Toggle Navigation">
+            ☰
+          </button>
           <div className="r1-search">
             <span>⌕</span>
             <input type="text" placeholder="Search booking, passport or supplier..." value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -204,10 +225,14 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           </div>
           <div className="r1-top-actions">
             <div className="r1-notification"></div>
-            <div className="r1-profile" style={{ position: "relative", cursor: "pointer" }} onClick={() => setShowProfileMenu(!showProfileMenu)}>
-              <div className="r1-profile-avatar">{owner.slice(0,2).toUpperCase() || "AD"}</div>
+            <div className="r1-profile" style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setShowProfileMenu(!showProfileMenu)}>
+              {settings.adminAvatar ? (
+                <img src={settings.adminAvatar} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+              ) : (
+                <div className="r1-profile-avatar">{settings.adminEmail ? settings.adminEmail.slice(0,2).toUpperCase() : "AD"}</div>
+              )}
               <div className="r1-profile-info">
-                <strong>{owner}</strong>
+                <strong>{settings.adminEmail || owner}</strong>
                 <span>Administrator ▼</span>
               </div>
               {showProfileMenu && (
@@ -221,23 +246,55 @@ export default function AdminDashboard({ owner }: { owner: string }) {
         </header>
 
         {showProfileEdit && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyCenter: "center" }}>
-            <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 400, maxWidth: "90%" }}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 450, maxWidth: "90%", maxHeight: "90vh", overflowY: "auto" }}>
               <h3>Admin Profile</h3>
-              <p style={{ color: "#6b7280", fontSize: 14 }}>Logged in as: <strong>{owner}</strong></p>
-              <div className="r1-form-grid" style={{ gridTemplateColumns: "1fr", margin: "16px 0" }}>
-                <div><label className="r1-form-label">Role</label><input className="r1-input" disabled value="Administrator" /></div>
-              </div>
-              <div className="r1-editor-actions">
-                <button className="r1-btn-secondary" onClick={() => setShowProfileEdit(false)}>Close</button>
-                <button className="r1-btn-danger" onClick={logout}>Logout</button>
-              </div>
+              <form onSubmit={saveProfile}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "16px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    {settings.adminAvatar ? (
+                      <img src={settings.adminAvatar} alt="Profile" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div className="r1-profile-avatar" style={{ width: 64, height: 64, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>{settings.adminEmail ? settings.adminEmail.slice(0,2).toUpperCase() : "AD"}</div>
+                    )}
+                    <div>
+                      <label className="r1-form-label" style={{ marginBottom: 4 }}>Profile Picture</label>
+                      <input type="file" accept="image/*" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setSettings({ ...settings, adminAvatar: reader.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="r1-form-label">Email Address</label>
+                    <input className="r1-input" required type="email" value={settings.adminEmail || ""} onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="r1-form-label">Password</label>
+                    <input className="r1-input" required type="password" value={settings.adminPassword || ""} onChange={(e) => setSettings({ ...settings, adminPassword: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="r1-form-label">Role</label>
+                    <input className="r1-input" disabled value="Administrator" />
+                  </div>
+                </div>
+                <div className="r1-editor-actions">
+                  <button type="submit" className="r1-btn-primary">Save Profile</button>
+                  <button type="button" className="r1-btn-secondary" onClick={() => setShowProfileEdit(false)}>Cancel</button>
+                </div>
+              </form>
             </div>
           </div>
         )}
 
         {showNewBooking && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyCenter: "center" }}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ background: "#fff", padding: 24, borderRadius: 12, width: 500, maxWidth: "90%" }}>
               <h3>+ New Booking Entry</h3>
               <form onSubmit={async (e) => {
@@ -293,7 +350,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                   </div>
                   <div className="r1-metric-body">
                     <div className="r1-metric-value">
-                      <strong>{totalBookings}</strong>
+                      <strong>{activeBookings}</strong>
                       <span className="r1-metric-badge positive">+12.5%</span>
                     </div>
                     <span className="r1-metric-subtitle">versus last month</span>
@@ -343,49 +400,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                 </div>
               </div>
 
-              <div className="r1-section-card">
-                <div className="r1-section-header">
-                  <div>
-                    <h2>Action queue</h2>
-                    <p>Prioritized operational tasks</p>
-                  </div>
-                  <a href="#">View all</a>
-                </div>
-                <div className="r1-list">
-                  <div className="r1-list-item">
-                    <div className="r1-list-icon">⬖</div>
-                    <div className="r1-list-content">
-                      <strong>7 visa cases need review</strong>
-                      <span>Passport or photo validation</span>
-                    </div>
-                    <span className="r1-status-badge r1-status-due">DUE TODAY</span>
-                  </div>
-                  <div className="r1-list-item">
-                    <div className="r1-list-icon" style={{ background: '#fdf4e7', color: '#b26829' }}>▦</div>
-                    <div className="r1-list-content">
-                      <strong>Madinah hotel inventory is low</strong>
-                      <span>18 rooms remain for August</span>
-                    </div>
-                    <span className="r1-status-badge r1-status-review">REVIEW</span>
-                  </div>
-                  <div className="r1-list-item">
-                    <div className="r1-list-icon" style={{ background: '#fef3c7', color: '#b45309' }}>ريال</div>
-                    <div className="r1-list-content">
-                      <strong>3 agency payments overdue</strong>
-                      <span>SAR 28,450 outstanding</span>
-                    </div>
-                    <span className="r1-status-badge r1-status-followup">FOLLOW UP</span>
-                  </div>
-                  <div className="r1-list-item">
-                    <div className="r1-list-icon" style={{ background: '#fef3c7', color: '#b45309' }}>▣</div>
-                    <div className="r1-list-content">
-                      <strong>Group RO-24072 incomplete</strong>
-                      <span>2 passengers missing documents</span>
-                    </div>
-                    <span className="r1-status-badge r1-status-open">OPEN</span>
-                  </div>
-                </div>
-              </div>
+
 
               <div className="r1-section-card">
                 <div className="r1-section-header">

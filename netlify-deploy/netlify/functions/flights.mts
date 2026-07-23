@@ -74,7 +74,7 @@ export default async function handler(request: Request, _context: Context) {
     if (slices.length < 1 || slices.length > 6 || slices.some((slice) => !/^[A-Z]{3}$/.test(slice.origin) || !/^[A-Z]{3}$/.test(slice.destination) || slice.origin === slice.destination || !slice.departure_date)) {
       return new Response(JSON.stringify({ error: "Enter valid, different three-letter IATA airport codes and dates for every flight." }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
-    if (adults < 1 || adults > 9 || children < 0 || children > 9 - adults || infants < 0 || infants > adults) {
+    if (adults < 1 || adults > 9 || children < 0 || children > 12 || infants < 0 || infants > 9) {
       return new Response(JSON.stringify({ error: "Please check the Adult, Child, and Infant numbers." }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
     const [xml, duffel] = await Promise.all([searchXml(body), searchDuffel(body)]);
