@@ -21,18 +21,37 @@ let mockStore = {
   integrations: [] as any[]
 };
 
-try {
-  if (fs.existsSync(STORE_FILE)) {
-    const data = fs.readFileSync(STORE_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-    if (parsed.settings) mockStore = { ...mockStore, ...parsed };
+const loadStore = () => {
+  try {
+    if (fs.existsSync(STORE_FILE)) {
+      const data = fs.readFileSync(STORE_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (parsed.settings) {
+        mockStore.settings = parsed.settings || mockStore.settings;
+        mockStore.records = parsed.records || mockStore.records;
+        mockStore.templates = parsed.templates || mockStore.templates;
+        mockStore.accounts = parsed.accounts || mockStore.accounts;
+        mockStore.destinations = parsed.destinations || mockStore.destinations;
+        mockStore.passengers = parsed.passengers || mockStore.passengers;
+        mockStore.visaApplications = parsed.visaApplications || mockStore.visaApplications;
+        mockStore.inventory = parsed.inventory || mockStore.inventory;
+        mockStore.suppliers = parsed.suppliers || mockStore.suppliers;
+        mockStore.integrations = parsed.integrations || mockStore.integrations;
+      }
+    }
+  } catch (e) {
+    console.error("MOCK DB LOAD ERROR:", e);
   }
-} catch (e) {}
+};
+
+loadStore();
 
 const saveStore = () => {
   try {
     fs.writeFileSync(STORE_FILE, JSON.stringify(mockStore, null, 2));
-  } catch (e) {}
+  } catch (e) {
+    console.error("MOCK DB SAVE ERROR:", e);
+  }
 };
 
 const mockDB = {
@@ -40,6 +59,7 @@ const mockDB = {
     return {
       bind: (...args: any[]) => ({
         run: async () => {
+          loadStore();
           if (query.includes('INSERT INTO umrah_templates')) {
              mockStore.templates.push({ id: mockStore.templates.length + 1, name: args[0], badge: args[1], nights: args[2], hotel: args[3], price: args[4], active: args[5], sort_order: args[6], updated_at: args[7] });
           } else if (query.includes('UPDATE umrah_templates')) {
@@ -116,6 +136,7 @@ const mockDB = {
           return { success: true, meta: { last_row_id: 1 } };
         },
         all: async () => {
+          loadStore();
           if (query.includes('site_settings')) return { results: mockStore.settings };
           if (query.includes('booking_records')) return { results: mockStore.records };
           if (query.includes('umrah_templates')) return { results: mockStore.templates };
@@ -129,6 +150,7 @@ const mockDB = {
           return { results: [] };
         },
         first: async () => {
+          loadStore();
           if (query.includes('site_settings')) {
             const s = mockStore.settings[0];
             return {
@@ -148,6 +170,7 @@ const mockDB = {
       }),
       run: async () => ({ success: true }),
       all: async () => {
+        loadStore();
         if (query.includes('site_settings')) return { results: mockStore.settings };
         if (query.includes('booking_records')) return { results: mockStore.records };
         if (query.includes('umrah_templates')) return { results: mockStore.templates };
@@ -161,6 +184,7 @@ const mockDB = {
         return { results: [] };
       },
       first: async () => {
+        loadStore();
         if (query.includes('site_settings')) {
           const s = mockStore.settings[0];
           return {
