@@ -43,7 +43,14 @@ export async function GET() {
       admin_avatar: s.adminAvatar || s.admin_avatar || ""
     };
 
-    return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results, destinations: destinations.results, passengers: passengers.results, visaApplications: visaApplications.results, inventory: inventory.results, suppliers: suppliers.results, integrations: integrations.results });
+    const mappedRecords = (records.results || []).map((r: any) => ({
+      ...r,
+      customerName: r.customerName || r.customer_name || "Guest",
+      detailsJson: r.detailsJson || r.details_json || "{}",
+      createdAt: r.createdAt || r.created_at || new Date().toISOString()
+    }));
+
+    return NextResponse.json({ settings, records: mappedRecords, templates: templates.results, accounts: accounts.results, destinations: destinations.results, passengers: passengers.results, visaApplications: visaApplications.results, inventory: inventory.results, suppliers: suppliers.results, integrations: integrations.results });
   } catch (error: any) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to retrieve dashboard data." }, { status: 500 });
   }

@@ -200,8 +200,17 @@ export default function Home() {
 
   const submitBooking = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setBookingError("");
-    if (!selectedFlight) { const ref = `RHL-${Date.now().toString().slice(-6)}`; setBookingRef(ref); setBookingSubmitted(true); return; }
-    if (!selectedFlight) { const ref = `RHL-${Date.now().toString().slice(-6)}`; setBookingRef(ref); setBookingSubmitted(true); return; }
+    if (!selectedFlight) {
+      const ref = `RHL-${Date.now().toString().slice(-6)}`;
+      setBookingRef(ref);
+      await saveRecord("travel", ref, `${bookingForm.fullName} ${bookingForm.surname}`.trim(), bookingForm.email, bookingForm.phone, {
+        passengers: bookingForm.passengers,
+        nationality: bookingForm.nationality,
+        notes: bookingForm.notes
+      });
+      setBookingSubmitted(true);
+      return;
+    }
     if (!/^\+[1-9]\d{7,14}$/.test(bookingForm.phone.replace(/[\s()-]/g, ""))) { setBookingError("Enter the mobile number with country code, for example +97334451249."); return; }
     setBookingLoading(true);
     try {

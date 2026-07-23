@@ -1,23 +1,38 @@
+import fs from 'fs';
+import path from 'path';
+
 // Use standard environment variables for Vercel
 const env = process.env as any;
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
-const mockStore = {
+const STORE_FILE = path.join(process.cwd(), '.rihla-mock-store.json');
+
+let mockStore = {
   settings: [{ id: 1, business_name: 'Rihla', whatsapp: '', facebook: '', instagram: '', x: '', linkedin: '', tiktok: '', youtube: '', snapchat: '', admin_email: 'mirali200@gmail.com', admin_password: 'password', admin_avatar: '', updated_at: new Date().toISOString() }],
   records: [] as any[],
   templates: [] as any[],
   accounts: [] as any[],
-  destinations: [
-    { id: 1, place: "AlUla", country: "Saudi Arabia", tag: "Desert wonder", days: "4 days", color: "sunset", sortOrder: 1 },
-    { id: 2, place: "Istanbul", country: "Türkiye", tag: "Culture & cuisine", days: "5 days", color: "blue", sortOrder: 2 },
-    { id: 3, place: "Bali", country: "Indonesia", tag: "Island reset", days: "7 days", color: "green", sortOrder: 3 }
-  ],
+  destinations: [] as any[],
   passengers: [] as any[],
   visaApplications: [] as any[],
   inventory: [] as any[],
   suppliers: [] as any[],
   integrations: [] as any[]
+};
+
+try {
+  if (fs.existsSync(STORE_FILE)) {
+    const data = fs.readFileSync(STORE_FILE, 'utf-8');
+    const parsed = JSON.parse(data);
+    if (parsed.settings) mockStore = { ...mockStore, ...parsed };
+  }
+} catch (e) {}
+
+const saveStore = () => {
+  try {
+    fs.writeFileSync(STORE_FILE, JSON.stringify(mockStore, null, 2));
+  } catch (e) {}
 };
 
 const mockDB = {
@@ -33,7 +48,7 @@ const mockDB = {
              if (idx >= 0) mockStore.templates[idx] = { ...mockStore.templates[idx], name: args[0], badge: args[1], nights: args[2], hotel: args[3], price: args[4], active: args[5], sort_order: args[6], updated_at: args[7] };
           } else if (query.includes('INSERT OR REPLACE INTO booking_records')) {
              const existing = mockStore.records.findIndex(r => r.id === args[0]);
-             const record = { id: args[0], type: args[1], status: args[2], customer_name: args[3], email: args[4], phone: args[5], details_json: args[6], created_at: args[7], updated_at: args[8] };
+             const record = { id: args[0], type: args[1], status: args[2], customer_name: args[3], email: args[4], phone: args[5], details_json: args[6], created_at: args[8], updated_at: args[9] };
              if (existing >= 0) mockStore.records[existing] = record; else mockStore.records.unshift(record);
           } else if (query.includes('UPDATE booking_records SET type = ?')) {
              const id = args[args.length - 1];
@@ -97,6 +112,7 @@ const mockDB = {
           } else if (query.includes('DELETE FROM integrations')) {
              mockStore.integrations = mockStore.integrations.filter(x => x.id !== args[0]);
           }
+          saveStore();
           return { success: true, meta: { last_row_id: 1 } };
         },
         all: async () => {

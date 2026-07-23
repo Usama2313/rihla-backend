@@ -29,6 +29,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [settings, setSettings] = useState(emptySettings);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [destinations, setDestinations] = useState<DestinationItem[]>([]);
@@ -255,15 +256,15 @@ export default function AdminDashboard({ owner }: { owner: string }) {
       {/* Sidebar */}
       <aside className={`r1-sidebar ${showMobileSidebar ? "show" : ""}`}>
         <div className="r1-brand">
-          <div className="r1-logo-icon">R1</div>
-          <div className="r1-brand-text">RihlaOne</div>
+          <div className="r1-logo-icon">{settings.businessName?.charAt(0)?.toUpperCase() || "R"}</div>
+          <div className="r1-brand-text">{settings.businessName || "RihlaOne"}</div>
         </div>
         
         <div className="r1-workspace">
-          <div className="r1-workspace-avatar">AU</div>
+          <div className="r1-workspace-avatar">{settings.businessName?.slice(0, 2)?.toUpperCase() || "AU"}</div>
           <div className="r1-workspace-info">
-            <strong>AL ULAYA</strong>
-            <span>Hajj & Umrah</span>
+            <strong>{settings.businessName || "AL ULAYA"}</strong>
+            <span>Dashboard</span>
           </div>
           <span className="r1-workspace-chevron">▼</span>
         </div>
@@ -289,13 +290,9 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           <button className={`r1-nav-item ${activeTab === "suppliers" ? "active" : ""}`} onClick={() => selectTab("suppliers")}><span className="r1-nav-icon">⋈</span> Suppliers</button>
         </div>
 
-        <div className="r1-nav-section">
-          <div className="r1-nav-title">System</div>
-          <button className={`r1-nav-item ${activeTab === "integrations" ? "active" : ""}`} onClick={() => selectTab("integrations")}><span className="r1-nav-icon">⌘</span> Integrations</button>
-        </div>
 
         <div className="r1-sidebar-footer">
-          <button className="r1-nav-item" onClick={logout}><span className="r1-nav-icon">?</span> Help centre</button>
+          <button className="r1-nav-item" onClick={() => setShowHelpModal(true)}><span className="r1-nav-icon">?</span> Help centre</button>
         </div>
       </aside>
 
@@ -504,24 +501,22 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                   </div>
                   <div className="r1-metric-body">
                     <div className="r1-metric-value">
-                      <strong>{bookingsThisMonth * 2 || 74}</strong>
-                      <span className="r1-metric-badge positive">+8.2%</span>
+                      <strong>{bookingsThisMonth}</strong>
                     </div>
-                    <span className="r1-metric-subtitle">across 7 departure groups</span>
+                    <span className="r1-metric-subtitle">from {bookingsThisMonth} total records</span>
                   </div>
                 </div>
 
                 <div className="r1-metric-card">
                   <div className="r1-metric-header">
-                    <span className="r1-metric-title">Visa cases pending</span>
+                    <span className="r1-metric-title">Pending cases</span>
                     <div className="r1-metric-icon">⬖</div>
                   </div>
                   <div className="r1-metric-body">
                     <div className="r1-metric-value">
                       <strong>{pendingCount}</strong>
-                      <span className="r1-metric-badge negative">-3 today</span>
                     </div>
-                    <span className="r1-metric-subtitle">7 require review</span>
+                    <span className="r1-metric-subtitle">require review</span>
                   </div>
                 </div>
 
@@ -533,7 +528,6 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                   <div className="r1-metric-body">
                     <div className="r1-metric-value">
                       <strong>SAR {grossValue.toLocaleString()}</strong>
-                      <span className="r1-metric-badge positive">+18.4%</span>
                     </div>
                     <span className="r1-metric-subtitle">confirmed and pending</span>
                   </div>
@@ -578,7 +572,7 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                           </td>
                           <td>{details.passengers || 1}</td>
                           <td>{new Date(r.createdAt).toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                          <td><strong>{details.flight?.price || details.price || "SAR 3,500"}</strong></td>
+                          <td><strong>{details.flight?.price || details.price || "-"}</strong></td>
                           <td><span className={`r1-status-badge ${r.status === 'confirmed' ? 'r1-status-success' : 'r1-status-due'}`}>{r.status.toUpperCase()}</span></td>
                         </tr>
                       );
@@ -622,18 +616,33 @@ export default function AdminDashboard({ owner }: { owner: string }) {
               )}
 
               <div className="r1-record-list">
-                {filteredRecords.map((item) => (
-                  <div className="r1-record-card" key={item.id}>
-                    <div className="r1-record-info">
-                      <strong>{item.customerName}</strong>
-                      <span>{item.id} · {item.type} · {new Date(item.createdAt).toLocaleString()}</span>
+                {filteredRecords.map((item) => {
+                  let details: any = {};
+                  try { details = JSON.parse(item.detailsJson || "{}"); } catch(e){}
+                  return (
+                  <div className="r1-record-card" key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+                      <div className="r1-record-info">
+                        <strong>{item.customerName}</strong>
+                        <span>{item.id} · {item.type} · {new Date(item.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="r1-record-actions">
+                        <span className="r1-status-badge r1-status-open">{item.status}</span>
+                        <button className="r1-btn-secondary" onClick={() => setBookingDraft({ ...item })}>Edit</button>
+                      </div>
                     </div>
-                    <div className="r1-record-actions">
-                      <span className="r1-status-badge r1-status-open">{item.status}</span>
-                      <button className="r1-btn-secondary" onClick={() => setBookingDraft({ ...item })}>Edit</button>
-                    </div>
+                    {Object.keys(details).length > 0 && (
+                      <div style={{ background: '#f9fafb', padding: 12, borderRadius: 8, fontSize: 14, border: '1px solid #e5e7eb' }}>
+                        {Object.entries(details).map(([k, v]) => (
+                          <div key={k} style={{ display: 'flex', marginBottom: 6 }}>
+                            <strong style={{ width: 150, color: '#4b5563', textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1').trim()}:</strong>
+                            <span style={{ color: '#111827', flex: 1, wordBreak: 'break-word' }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
+                )})}
                 {!filteredRecords.length && <p>No bookings found.</p>}
               </div>
             </div>
@@ -899,43 +908,6 @@ export default function AdminDashboard({ owner }: { owner: string }) {
             </div>
           )}
 
-          {activeTab === "integrations" && (
-            <div className="r1-section-card">
-              <div className="r1-section-header">
-                <div>
-                  <h2>System Integrations</h2>
-                  <p>Manage XML Suppliers, Flight APIs and Gateways</p>
-                </div>
-                <button className="r1-btn-primary" onClick={() => setIntegrationDraft(emptyIntegration)}>+ Add Integration</button>
-              </div>
-              <form onSubmit={saveIntegration} style={{ marginBottom: 24, padding: 20, border: "1px solid #e5e7eb", borderRadius: 8 }}>
-                <h3>{integrationDraft.id ? "Edit Integration" : "Add Integration"}</h3>
-                <div className="r1-form-grid">
-                  <div><label className="r1-form-label">Integration Name</label><input className="r1-input" required value={integrationDraft.name} onChange={(e) => setIntegrationDraft({ ...integrationDraft, name: e.target.value })} /></div>
-                  <div><label className="r1-form-label">API Key / Credentials</label><input className="r1-input" value={integrationDraft.api_key} onChange={(e) => setIntegrationDraft({ ...integrationDraft, api_key: e.target.value })} /></div>
-                  <div><label className="r1-form-label">Status</label><select className="r1-input" value={integrationDraft.status} onChange={(e) => setIntegrationDraft({ ...integrationDraft, status: e.target.value })}><option value="connected">Connected</option><option value="disconnected">Disconnected</option></select></div>
-                </div>
-                <div className="r1-editor-actions">
-                  <button type="submit" className="r1-btn-primary">Save Integration</button>
-                  {integrationDraft.id && <button type="button" className="r1-btn-danger" onClick={() => deleteItem("integration", integrationDraft.id!)}>Delete</button>}
-                </div>
-              </form>
-              <table className="r1-table">
-                <thead><tr><th>NAME</th><th>API KEY</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
-                <tbody>
-                  {integrations.map((ig) => (
-                    <tr key={ig.id}>
-                      <td><strong>{ig.name}</strong></td>
-                      <td>{ig.api_key ? "••••••••" + ig.api_key.slice(-4) : "None"}</td>
-                      <td><span className={`r1-status-badge ${ig.status === 'connected' ? 'r1-status-success' : 'r1-status-due'}`}>{ig.status.toUpperCase()}</span></td>
-                      <td><button className="r1-btn-secondary" onClick={() => setIntegrationDraft(ig)}>Edit</button></td>
-                    </tr>
-                  ))}
-                  {!integrations.length && <tr><td colSpan={4} style={{ textAlign: "center" }}>No external integrations configured.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
       {deleteConfirm && (
@@ -970,6 +942,35 @@ export default function AdminDashboard({ owner }: { owner: string }) {
               </button>
             </div>
           ))}
+        </div>
+      )}
+      {showHelpModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 990, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", padding: 32, borderRadius: 12, width: 600, maxWidth: "90%", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.2)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 24, color: "#111827" }}>Dashboard Help & Connection Guide</h3>
+            <p style={{ margin: "0 0 24px", color: "#4b5563", fontSize: 16, lineHeight: 1.6 }}>
+              Welcome to the Rihla Admin Dashboard. This portal is directly connected to your public website. Here is how each section interacts with your online presence:
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+              <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <strong style={{ display: "block", color: "#111827", marginBottom: 4, fontSize: 16 }}>▣ Bookings</strong>
+                <span style={{ color: "#4b5563", fontSize: 14, lineHeight: 1.5 }}>When a customer requests a flight, hotel, or complete Umrah package through the website's booking forms, the details and requested dates immediately appear here for your review and confirmation.</span>
+              </div>
+              <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <strong style={{ display: "block", color: "#111827", marginBottom: 4, fontSize: 16 }}>♟ Passengers & Visa Processing</strong>
+                <span style={{ color: "#4b5563", fontSize: 14, lineHeight: 1.5 }}>If a customer uploads and scans their passport MRZ on the website, their details are securely extracted and recorded here to help you process their visa applications quickly without manual data entry.</span>
+              </div>
+              <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 8 }}>
+                <strong style={{ display: "block", color: "#111827", marginBottom: 4, fontSize: 16 }}>≣ Package Templates</strong>
+                <span style={{ color: "#4b5563", fontSize: 14, lineHeight: 1.5 }}>The packages listed under the "Umrah packages & visa assistance" section on your website are managed here. You can add, edit, or remove packages and update prices, and the website will instantly reflect those changes.</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="button" className="r1-btn-primary" onClick={() => setShowHelpModal(false)}>
+                Understood
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
