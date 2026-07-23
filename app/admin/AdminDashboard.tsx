@@ -49,46 +49,86 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("Loading saved data...");
+  const [toasts, setToasts] = useState<Array<{ id: number; text: string; type: "success" | "error" | "info" }>>([]);
+
+  const addToast = (text: string, type: "success" | "error" | "info" = "info") => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 5000);
+  };
 
   const load = async () => {
-    const response = await fetch("/api/admin", { cache: "no-store" });
-    if (!response.ok) {
-      if (response.status === 401) window.location.reload();
-      const data = await response.json().catch(() => ({}));
-      return setMessage(data.error || "Unable to load data.");
+    try {
+      const response = await fetch("/api/admin", { cache: "no-store" });
+      if (!response.ok) {
+        if (response.status === 401) window.location.reload();
+        const data = await response.json().catch(() => ({}));
+        addToast(data.error || "Unable to load data.", "error");
+        return;
+      }
+      const data = await response.json();
+      setSettings({ ...emptySettings, ...data.settings });
+      setRecords(data.records || []);
+      setTemplates((data.templates || []).map((item: TemplateItem) => ({ ...item, active: Boolean(item.active) })));
+      setDestinations(data.destinations || []);
+      setPassengers(data.passengers || []);
+      setVisaApps(data.visaApplications || []);
+      setInventory(data.inventory || []);
+      setSuppliers(data.suppliers || []);
+      setIntegrations(data.integrations || []);
+      setMessage("");
+    } catch (err: any) {
+      addToast(err.message || "Could not retrieve system data.", "error");
     }
-    const data = await response.json();
-    setSettings({ ...emptySettings, ...data.settings });
-    setRecords(data.records || []);
-    setTemplates((data.templates || []).map((item: TemplateItem) => ({ ...item, active: Boolean(item.active) })));
-    setDestinations(data.destinations || []);
-    setPassengers(data.passengers || []);
-    setVisaApps(data.visaApplications || []);
-    setInventory(data.inventory || []);
-    setSuppliers(data.suppliers || []);
-    setIntegrations(data.integrations || []);
-    setMessage("");
   };
   
   useEffect(() => { load(); }, []);
 
   const saveSettings = async (event: React.FormEvent) => {
-    event.preventDefault(); setMessage("Saving social accounts...");
-    const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
-    setMessage(response.ok ? "Social accounts saved." : "Could not save settings.");
+    event.preventDefault();
+    addToast("Saving social accounts...", "info");
+    try {
+      const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        addToast("Social accounts saved.", "success");
+      } else {
+        addToast(data.error || "Could not save settings.", "error");
+      }
+    } catch (err: any) {
+      addToast(err.message || "Failed to save settings.", "error");
+    }
   };
+
   const saveTemplate = async (event: React.FormEvent) => {
-    event.preventDefault(); setMessage("Saving Umrah template...");
-    const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(templateDraft) });
-    const data = await response.json();
-    if (!response.ok) return setMessage(data.error || "Template could not be saved.");
-    setTemplateDraft(emptyTemplate); await load(); setMessage("Umrah template saved.");
+    event.preventDefault();
+    addToast("Saving Umrah template...", "info");
+    try {
+      const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(templateDraft) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return addToast(data.error || "Template could not be saved.", "error");
+      setTemplateDraft(emptyTemplate);
+      await load();
+      addToast("Umrah template saved.", "success");
+    } catch (err: any) {
+      addToast(err.message || "Failed to save template.", "error");
+    }
   };
+
   const saveGeneric = async (resource: string, payload: any, setter: any, empty: any) => {
-    setMessage(`Saving ${resource}...`);
-    const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, ...payload }) });
-    if (!response.ok) return setMessage((await response.json()).error || `${resource} could not be saved.`);
-    setter(empty); await load(); setMessage(`${resource} saved.`);
+    addToast(`Saving ${resource}...`, "info");
+    try {
+      const response = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, ...payload }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return addToast(data.error || `${resource} could not be saved.`, "error");
+      setter(empty);
+      await load();
+      addToast(`${resource.charAt(0).toUpperCase() + resource.slice(1)} saved.`, "success");
+    } catch (err: any) {
+      addToast(err.message || `Failed to save ${resource}.`, "error");
+    }
   };
 
   const saveDestination = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("destination", destinationDraft, setDestinationDraft, emptyDestination); };
@@ -99,38 +139,58 @@ export default function AdminDashboard({ owner }: { owner: string }) {
   const saveIntegration = async (event: React.FormEvent) => { event.preventDefault(); await saveGeneric("integration", integrationDraft, setIntegrationDraft, emptyIntegration); };
 
   const saveBooking = async (event: React.FormEvent) => {
-    event.preventDefault(); if (!bookingDraft) return;
-    try { JSON.parse(bookingDraft.detailsJson || "{}"); } catch { return setMessage("Booking details must be valid JSON."); }
-    const response = await fetch("/api/admin", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource: "booking", ...bookingDraft }) });
-    if (!response.ok) return setMessage("Booking could not be saved.");
-    setBookingDraft(null); await load(); setMessage("Booking updated.");
+    event.preventDefault();
+    if (!bookingDraft) return;
+    try { JSON.parse(bookingDraft.detailsJson || "{}"); } catch { return addToast("Booking details must be valid JSON.", "error"); }
+    try {
+      const response = await fetch("/api/admin", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource: "booking", ...bookingDraft }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return addToast(data.error || "Booking could not be saved.", "error");
+      setBookingDraft(null);
+      await load();
+      addToast("Booking updated.", "success");
+    } catch (err: any) {
+      addToast(err.message || "Failed to save booking.", "error");
+    }
   };
 
   const saveProfile = async (event: React.FormEvent) => {
-    event.preventDefault(); setMessage("Saving profile...");
-    const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
-    if (response.ok) {
-      setMessage("Profile updated.");
-      setShowProfileEdit(false);
-      await load();
-    } else {
-      setMessage("Could not update profile.");
+    event.preventDefault();
+    addToast("Saving profile...", "info");
+    try {
+      const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        addToast("Profile updated.", "success");
+        setShowProfileEdit(false);
+        await load();
+      } else {
+        addToast(data.error || "Could not update profile.", "error");
+      }
+    } catch (err: any) {
+      addToast(err.message || "Failed to save profile.", "error");
     }
   };
 
   const deleteItem = async (resource: string, id: number | string) => {
     if (!window.confirm(`Delete this ${resource}? This cannot be undone.`)) return;
-    const response = await fetch("/api/admin", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, id }) });
-    if (!response.ok) return setMessage(`Could not delete ${resource}.`);
-    if (resource === "template" && templateDraft.id === id) setTemplateDraft(emptyTemplate);
-    if (resource === "destination" && destinationDraft.id === id) setDestinationDraft(emptyDestination);
-    if (resource === "passenger" && passengerDraft.id === id) setPassengerDraft(emptyPassenger);
-    if (resource === "visa_application" && visaAppDraft.id === id) setVisaAppDraft(emptyVisaApp);
-    if (resource === "inventory" && inventoryDraft.id === id) setInventoryDraft(emptyInventory);
-    if (resource === "supplier" && supplierDraft.id === id) setSupplierDraft(emptySupplier);
-    if (resource === "integration" && integrationDraft.id === id) setIntegrationDraft(emptyIntegration);
-    if (resource === "booking" && bookingDraft?.id === id) setBookingDraft(null);
-    await load(); setMessage(`${resource.charAt(0).toUpperCase() + resource.slice(1)} deleted.`);
+    try {
+      const response = await fetch("/api/admin", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resource, id }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return addToast(data.error || `Could not delete ${resource}.`, "error");
+      if (resource === "template" && templateDraft.id === id) setTemplateDraft(emptyTemplate);
+      if (resource === "destination" && destinationDraft.id === id) setDestinationDraft(emptyDestination);
+      if (resource === "passenger" && passengerDraft.id === id) setPassengerDraft(emptyPassenger);
+      if (resource === "visa_application" && visaAppDraft.id === id) setVisaAppDraft(emptyVisaApp);
+      if (resource === "inventory" && inventoryDraft.id === id) setInventoryDraft(emptyInventory);
+      if (resource === "supplier" && supplierDraft.id === id) setSupplierDraft(emptySupplier);
+      if (resource === "integration" && integrationDraft.id === id) setIntegrationDraft(emptyIntegration);
+      if (resource === "booking" && bookingDraft?.id === id) setBookingDraft(null);
+      await load();
+      addToast(`${resource.charAt(0).toUpperCase() + resource.slice(1)} deleted.`, "success");
+    } catch (err: any) {
+      addToast(err.message || `Failed to delete ${resource}.`, "error");
+    }
   };
   const exportBackup = () => {
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), settings, umrahTemplates: templates, bookingRecords: records, destinations }, null, 2)], { type: "application/json" });
@@ -305,10 +365,19 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                 const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
                 const type = (form.elements.namedItem("type") as HTMLSelectElement).value;
                 const ref = `MAN-${Date.now().toString().slice(-6)}`;
-                await fetch("/api/records", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, reference: ref, customerName, email, phone, details: { manual: true } }) });
-                setShowNewBooking(false);
-                await load();
-                setMessage("Manual booking created successfully!");
+                try {
+                  const response = await fetch("/api/records", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, reference: ref, customerName, email, phone, details: { manual: true } }) });
+                  const data = await response.json().catch(() => ({}));
+                  if (!response.ok) {
+                    addToast(data.error || "Could not create manual booking.", "error");
+                    return;
+                  }
+                  setShowNewBooking(false);
+                  await load();
+                  addToast("Manual booking created successfully!", "success");
+                } catch (err: any) {
+                  addToast(err.message || "Failed to create manual booking.", "error");
+                }
               }}>
                 <div className="r1-form-grid" style={{ gridTemplateColumns: "1fr", gap: 12, margin: "16px 0" }}>
                   <div><label className="r1-form-label">Customer Name</label><input name="custName" className="r1-input" required placeholder="Full Name" /></div>
@@ -798,6 +867,22 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           )}
         </div>
       </div>
+      {toasts.length > 0 && (
+        <div className="r1-toast-container">
+          {toasts.map((toast) => (
+            <div key={toast.id} className={`r1-toast r1-toast-${toast.type}`}>
+              <span>{toast.text}</span>
+              <button
+                type="button"
+                className="r1-toast-close"
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

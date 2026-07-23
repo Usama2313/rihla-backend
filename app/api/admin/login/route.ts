@@ -23,8 +23,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
-  } catch (err) {
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Login failed" }, { status: 500 });
   }
 }
 
