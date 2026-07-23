@@ -17,7 +17,7 @@ export async function GET() {
     if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
     // @ts-ignore
     const db: any = await ensureDb();
-    const [settings, records, templates, accounts, destinations, passengers, visaApplications, inventory, suppliers, integrations] = await Promise.all([
+    const [rawSettings, records, templates, accounts, destinations, passengers, visaApplications, inventory, suppliers, integrations] = await Promise.all([
       db.prepare("SELECT business_name AS businessName, whatsapp, facebook, instagram, x, linkedin, tiktok, youtube, snapchat, admin_email AS adminEmail, admin_password AS adminPassword, admin_avatar AS adminAvatar, updated_at AS updatedAt FROM site_settings WHERE id = 1").first(),
       db.prepare("SELECT id, type, status, customer_name AS customerName, email, phone, details_json AS detailsJson, created_at AS createdAt FROM booking_records ORDER BY created_at DESC LIMIT 500").all(),
       db.prepare("SELECT id, name, badge, nights, hotel, price, active, sort_order AS sortOrder, updated_at AS updatedAt FROM umrah_templates ORDER BY sort_order, id").all(),
@@ -29,6 +29,20 @@ export async function GET() {
       db.prepare("SELECT * FROM suppliers").all(),
       db.prepare("SELECT * FROM integrations").all(),
     ]);
+
+    const s = rawSettings || {};
+    const settings = {
+      ...s,
+      businessName: s.businessName || s.business_name || "Rihla",
+      business_name: s.businessName || s.business_name || "Rihla",
+      adminEmail: s.adminEmail || s.admin_email || "mirali200@gmail.com",
+      admin_email: s.adminEmail || s.admin_email || "mirali200@gmail.com",
+      adminPassword: s.adminPassword || s.admin_password || "password",
+      admin_password: s.adminPassword || s.admin_password || "password",
+      adminAvatar: s.adminAvatar || s.admin_avatar || "",
+      admin_avatar: s.adminAvatar || s.admin_avatar || ""
+    };
+
     return NextResponse.json({ settings, records: records.results, templates: templates.results, accounts: accounts.results, destinations: destinations.results, passengers: passengers.results, visaApplications: visaApplications.results, inventory: inventory.results, suppliers: suppliers.results, integrations: integrations.results });
   } catch (error: any) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to retrieve dashboard data." }, { status: 500 });
@@ -129,12 +143,13 @@ export async function PUT(request: Request) {
     if (!(await authorized())) return NextResponse.json({ error: "Owner access required." }, { status: 403 });
     const body = await request.json();
     const clean = Object.fromEntries(socialFields.map((field) => [field, String(body[field] || "").trim().slice(0, 500)]));
-    const adminEmail = String(body.adminEmail || "mirali200@gmail.com").trim().slice(0, 240);
-    const adminPassword = String(body.adminPassword || "password").slice(0, 100);
-    const adminAvatar = String(body.adminAvatar || "").slice(0, 5000000);
+    const adminEmail = String(body.adminEmail || body.admin_email || "mirali200@gmail.com").trim().slice(0, 240);
+    const adminPassword = String(body.adminPassword || body.admin_password || "password").slice(0, 100);
+    const adminAvatar = String(body.adminAvatar || body.admin_avatar || "").slice(0, 5000000);
+    const businessName = String(body.businessName || body.business_name || "Rihla").trim().slice(0, 100);
     const db = await ensureDb();
     await db.prepare("UPDATE site_settings SET business_name = ?, whatsapp = ?, facebook = ?, instagram = ?, x = ?, linkedin = ?, tiktok = ?, youtube = ?, snapchat = ?, admin_email = ?, admin_password = ?, admin_avatar = ?, updated_at = ? WHERE id = 1")
-      .bind(String(body.businessName || "Rihla").trim().slice(0, 100), clean.whatsapp, clean.facebook, clean.instagram, clean.x, clean.linkedin, clean.tiktok, clean.youtube, clean.snapchat, adminEmail, adminPassword, adminAvatar, new Date().toISOString()).run();
+      .bind(businessName, clean.whatsapp, clean.facebook, clean.instagram, clean.x, clean.linkedin, clean.tiktok, clean.youtube, clean.snapchat, adminEmail, adminPassword, adminAvatar, new Date().toISOString()).run();
     return NextResponse.json({ saved: true });
   } catch (error: any) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update settings data." }, { status: 500 });

@@ -71,7 +71,19 @@ export default function AdminDashboard({ owner }: { owner: string }) {
         return;
       }
       const data = await response.json();
-      setSettings({ ...emptySettings, ...data.settings });
+      const s = data.settings || {};
+      const avatar = s.adminAvatar || s.admin_avatar || "";
+      const email = s.adminEmail || s.admin_email || "mirali200@gmail.com";
+      const password = s.adminPassword || s.admin_password || "password";
+      const business = s.businessName || s.business_name || "Rihla";
+      setSettings({
+        ...emptySettings,
+        ...s,
+        adminAvatar: avatar,
+        adminEmail: email,
+        adminPassword: password,
+        businessName: business
+      });
       setRecords(data.records || []);
       setTemplates((data.templates || []).map((item: TemplateItem) => ({ ...item, active: Boolean(item.active) })));
       setDestinations(data.destinations || []);
@@ -160,7 +172,14 @@ export default function AdminDashboard({ owner }: { owner: string }) {
     event.preventDefault();
     addToast("Saving profile...", "info");
     try {
-      const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(settings) });
+      const payload = {
+        ...settings,
+        admin_avatar: settings.adminAvatar,
+        admin_email: settings.adminEmail,
+        admin_password: settings.adminPassword,
+        business_name: settings.businessName
+      };
+      const response = await fetch("/api/admin", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
         addToast("Profile updated.", "success");
@@ -294,10 +313,10 @@ export default function AdminDashboard({ owner }: { owner: string }) {
           <div className="r1-top-actions">
             <div className="r1-notification"></div>
             <div className="r1-profile" style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }} onClick={() => setShowProfileMenu(!showProfileMenu)}>
-              {settings.adminAvatar ? (
-                <img src={settings.adminAvatar} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+              {(settings.adminAvatar || (settings as any).admin_avatar) ? (
+                <img src={settings.adminAvatar || (settings as any).admin_avatar} alt="Profile" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
               ) : (
-                <div className="r1-profile-avatar">{settings.adminEmail ? settings.adminEmail.slice(0,2).toUpperCase() : "AD"}</div>
+                <div className="r1-profile-avatar">{(settings.adminEmail || (settings as any).admin_email) ? (settings.adminEmail || (settings as any).admin_email).slice(0,2).toUpperCase() : "AD"}</div>
               )}
               <div className="r1-profile-info">
                 <strong>{settings.adminEmail || owner}</strong>

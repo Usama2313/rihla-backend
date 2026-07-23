@@ -113,7 +113,16 @@ const mockDB = {
           return { results: [] };
         },
         first: async () => {
-          if (query.includes('site_settings')) return mockStore.settings[0];
+          if (query.includes('site_settings')) {
+            const s = mockStore.settings[0];
+            return {
+              ...s,
+              businessName: s.business_name,
+              adminEmail: s.admin_email,
+              adminPassword: s.admin_password,
+              adminAvatar: s.admin_avatar
+            };
+          }
           return null;
         }
       }),
@@ -132,7 +141,16 @@ const mockDB = {
         return { results: [] };
       },
       first: async () => {
-        if (query.includes('site_settings')) return mockStore.settings[0];
+        if (query.includes('site_settings')) {
+          const s = mockStore.settings[0];
+          return {
+            ...s,
+            businessName: s.business_name,
+            adminEmail: s.admin_email,
+            adminPassword: s.admin_password,
+            adminAvatar: s.admin_avatar
+          };
+        }
         return null;
       }
     };
