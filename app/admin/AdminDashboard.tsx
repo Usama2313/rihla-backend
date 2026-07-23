@@ -605,8 +605,31 @@ export default function AdminDashboard({ owner }: { owner: string }) {
                     <div><label className="r1-form-label">Type</label><select className="r1-input" value={bookingDraft.type} onChange={(e) => setBookingDraft({ ...bookingDraft, type: e.target.value })}><option>flight</option><option>umrah</option><option>hotel</option></select></div>
                     <div><label className="r1-form-label">Status</label><select className="r1-input" value={bookingDraft.status} onChange={(e) => setBookingDraft({ ...bookingDraft, status: e.target.value })}><option>new</option><option>contacted</option><option>confirmed</option><option>closed</option></select></div>
                   </div>
-                  <label className="r1-form-label">Booking details JSON</label>
-                  <textarea className="r1-textarea" value={bookingDraft.detailsJson} onChange={(e) => setBookingDraft({ ...bookingDraft, detailsJson: e.target.value })} />
+                  {(() => {
+                    let draftDetails: any = {};
+                    try { draftDetails = JSON.parse(bookingDraft.detailsJson || "{}"); } catch(e){}
+                    const entries = Object.entries(draftDetails);
+                    if (entries.length === 0) return null;
+                    
+                    return (
+                      <div className="r1-form-grid" style={{ marginTop: 16, marginBottom: 16, borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
+                        <div style={{ gridColumn: '1 / -1' }}><h4 style={{ margin: '0', color: '#4b5563', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Booking Details</h4></div>
+                        {entries.map(([k, v]) => (
+                          <div key={k}>
+                            <label className="r1-form-label" style={{ textTransform: 'capitalize' }}>{k.replace(/([A-Z])/g, ' $1').trim()}</label>
+                            <input 
+                              className="r1-input" 
+                              value={typeof v === 'object' ? JSON.stringify(v) : String(v)} 
+                              onChange={(e) => {
+                                const newDetails = { ...draftDetails, [k]: e.target.value };
+                                setBookingDraft({ ...bookingDraft, detailsJson: JSON.stringify(newDetails) });
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <div className="r1-editor-actions">
                     <button type="submit" className="r1-btn-primary">Save booking</button>
                     <button type="button" className="r1-btn-secondary" onClick={() => setBookingDraft(null)}>Cancel</button>

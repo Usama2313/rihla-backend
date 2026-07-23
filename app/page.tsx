@@ -117,7 +117,7 @@ export default function Home() {
   const submitLead = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const reference = `UMR-${Date.now().toString().slice(-8)}`;
-    await saveRecord("umrah", reference, `${lead.name} ${lead.surname}`.trim(), lead.email, lead.phone, { ...lead, passport: `••••${lead.passport.slice(-4)}` });
+    await saveRecord("umrah", reference, `${lead.name} ${lead.surname}`.trim(), lead.email, lead.phone, { ...lead, passport: lead.passport });
     setLeadSent(true);
   };
 
@@ -221,7 +221,7 @@ export default function Home() {
       const data = await response.json(); if (!response.ok) throw new Error(data.error);
       const reference = data.pnr || data.supplierBookingId || data.reference;
       setBookingRef(reference); setBookingMeta({ bookId: data.bookId, bookGuid: data.bookGuid, currency: data.currency }); setSupplierStatus({ status: "Reservation accepted", pnr: data.pnr, testMode: data.testMode }); setBookingSubmitted(true);
-      await saveRecord("flight", reference, `${bookingForm.fullName} ${bookingForm.surname}`.trim(), bookingForm.email, bookingForm.phone, { flight: selectedFlight.summary, passengers: bookingForm.passengers, nationality: bookingForm.nationality, passport: `••••${bookingForm.passport.slice(-4)}`, passportExpiry: bookingForm.passportExpiry });
+      await saveRecord("flight", reference, `${bookingForm.fullName} ${bookingForm.surname}`.trim(), bookingForm.email, bookingForm.phone, { flight: selectedFlight.summary, passengers: bookingForm.passengers, nationality: bookingForm.nationality, passport: bookingForm.passport, passportExpiry: bookingForm.passportExpiry });
     } catch (error) { setBookingError(error instanceof Error ? error.message : "The reservation could not be created."); }
     finally { setBookingLoading(false); }
   };
