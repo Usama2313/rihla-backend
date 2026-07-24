@@ -271,24 +271,62 @@ export default function Home() {
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          setStatus(`Converting PDF page ${pageNum} of ${pdf.numPages}…`);
           const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 3.0 });
+          for (const rotation of [0, 90, 180, 270]) {
+            setStatus(rotation > 0 ? `Checking page ${pageNum} orientation (${rotation}°)…` : `Converting PDF page ${pageNum} of ${pdf.numPages}…`);
+            const viewport = page.getViewport({ scale: 3.0, rotation: rotation });
+            const canvas = document.createElement("canvas");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext("2d")!;
+            // @ts-ignore
+            await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
+            const imageSource = await new Promise<Blob>((resolve, reject) =>
+              canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
+            );
+
+            if (rotation === 0) setStatus(`Reading page ${pageNum}…`);
+            const { data } = await worker.recognize(imageSource);
+            const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
+            const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
+            
+            if (mrz1Index >= 0) {
+              const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
+              const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
+              if (m1Match && m2Match) {
+                mrz1 = m1Match[1];
+                mrz2 = m2Match[1];
+                break;
+              }
+            }
+          }
+          if (mrz1 && mrz2) break;
+        }
+      } else {
+        const image = new Image();
+        image.src = URL.createObjectURL(file);
+        await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
+        for (const rotation of [0, 90, 180, 270]) {
+          setStatus(rotation > 0 ? `Checking image orientation (${rotation}°)…` : `Reading image…`);
           const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          if (rotation === 0 || rotation === 180) {
+            canvas.width = image.width;
+            canvas.height = image.height;
+          } else {
+            canvas.width = image.height;
+            canvas.height = image.width;
+          }
           const ctx = canvas.getContext("2d")!;
-          // @ts-ignore
-          await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.drawImage(image, -image.width / 2, -image.height / 2);
           const imageSource = await new Promise<Blob>((resolve, reject) =>
             canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
           );
 
-          setStatus(`Reading page ${pageNum}…`);
           const { data } = await worker.recognize(imageSource);
           const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
           const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
-          
           if (mrz1Index >= 0) {
             const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
             const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
@@ -299,18 +337,7 @@ export default function Home() {
             }
           }
         }
-      } else {
-        const { data } = await worker.recognize(file);
-        const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
-        const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
-        if (mrz1Index >= 0) {
-          const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
-          const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
-          if (m1Match && m2Match) {
-            mrz1 = m1Match[1];
-            mrz2 = m2Match[1];
-          }
-        }
+        URL.revokeObjectURL(image.src);
       }
 
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
