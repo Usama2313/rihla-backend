@@ -264,7 +264,7 @@ export default function App() {
             if (rotation === 0) setStatus(`Reading page ${pageNum}…`);
             const { data } = await worker.recognize(imageSource);
             const lines = (data.text as string).toUpperCase().split(/\r?\n/)
-              .map((line: string) => line.replace(/[\s\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
+              .map((line: string) => line.replace(/\s/g, "").replace(/[\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
               .filter((line: string) => line.length >= 30);
             
             const mrz1Index = lines.findIndex((line: string) => {
@@ -312,7 +312,7 @@ export default function App() {
 
           const { data } = await worker.recognize(imageSource);
           const lines = (data.text as string).toUpperCase().split(/\r?\n/)
-            .map((line: string) => line.replace(/[\s\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
+            .map((line: string) => line.replace(/\s/g, "").replace(/[\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
             .filter((line: string) => line.length >= 30);
           
           const mrz1Index = lines.findIndex((line: string) => {
