@@ -246,28 +246,6 @@ export default function Home() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let worker: any = null;
     try {
-      let imageSource: File | Blob = file;
-      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      if (isPdf) {
-        setStatus("Converting PDF to image…");
-        const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).href;
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 3.0 });
-        const canvas = document.createElement("canvas");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        const ctx = canvas.getContext("2d")!;
-        // @ts-ignore
-        await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
-        imageSource = await new Promise<Blob>((resolve, reject) =>
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
-        );
-        setStatus("PDF converted. Reading MRZ…");
-      }
-
       const { createWorker } = await import("tesseract.js");
       worker = await createWorker("eng", 1, {
         logger: (m: { status: string; progress: number }) => {
@@ -280,10 +258,51 @@ export default function Home() {
           }
         },
       });
-      const { data } = await worker.recognize(imageSource);
-      const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
-      const mrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
-      const mrz2 = mrz1 ? lines[lines.indexOf(mrz1) + 1] : undefined;
+
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      let mrz1: string | undefined;
+      let mrz2: string | undefined;
+
+      if (isPdf) {
+        setStatus("Loading PDF document…");
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).href;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          setStatus(`Converting PDF page ${pageNum} of ${pdf.numPages}…`);
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 3.0 });
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext("2d")!;
+          // @ts-ignore
+          await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
+          const imageSource = await new Promise<Blob>((resolve, reject) =>
+            canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
+          );
+
+          setStatus(`Reading page ${pageNum}…`);
+          const { data } = await worker.recognize(imageSource);
+          const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
+          const candidateMrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
+          const candidateMrz2 = candidateMrz1 ? lines[lines.indexOf(candidateMrz1) + 1] : undefined;
+          
+          if (candidateMrz1 && candidateMrz2 && candidateMrz2.length >= 28) {
+            mrz1 = candidateMrz1;
+            mrz2 = candidateMrz2;
+            break;
+          }
+        }
+      } else {
+        const { data } = await worker.recognize(file);
+        const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
+        mrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
+        mrz2 = mrz1 ? lines[lines.indexOf(mrz1) + 1] : undefined;
+      }
+
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
 
       const sanitizeMrzLine = (line: string) => {
