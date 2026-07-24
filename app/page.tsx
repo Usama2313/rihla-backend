@@ -287,14 +287,24 @@ export default function Home() {
 
             if (rotation === 0) setStatus(`Reading page ${pageNum}…`);
             const { data } = await worker.recognize(imageSource);
-            const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
-            const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
+            const lines = String(data.text).toUpperCase().split(/\r?\n/)
+              .map((line: string) => line.replace(/[\s\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
+              .filter((line: string) => line.length >= 30);
             
+            const mrz1Index = lines.findIndex((line: string) => {
+              const pIdx = line.indexOf("P");
+              if (pIdx >= 0 && pIdx <= 10) {
+                const rest = line.slice(pIdx);
+                return rest.length >= 35 && (rest.match(/</g) || []).length >= 2;
+              }
+              return false;
+            });
+
             if (mrz1Index >= 0) {
-              const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
+              const m1 = lines[mrz1Index].slice(lines[mrz1Index].indexOf("P"));
               const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
-              if (m1Match && m2Match) {
-                mrz1 = m1Match[1];
+              if (m1 && m2Match) {
+                mrz1 = m1;
                 mrz2 = m2Match[1];
                 break;
               }
@@ -325,13 +335,24 @@ export default function Home() {
           );
 
           const { data } = await worker.recognize(imageSource);
-          const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
-          const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
+          const lines = String(data.text).toUpperCase().split(/\r?\n/)
+            .map((line: string) => line.replace(/[\s\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
+            .filter((line: string) => line.length >= 30);
+          
+          const mrz1Index = lines.findIndex((line: string) => {
+            const pIdx = line.indexOf("P");
+            if (pIdx >= 0 && pIdx <= 10) {
+              const rest = line.slice(pIdx);
+              return rest.length >= 35 && (rest.match(/</g) || []).length >= 2;
+            }
+            return false;
+          });
+
           if (mrz1Index >= 0) {
-            const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
+            const m1 = lines[mrz1Index].slice(lines[mrz1Index].indexOf("P"));
             const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
-            if (m1Match && m2Match) {
-              mrz1 = m1Match[1];
+            if (m1 && m2Match) {
+              mrz1 = m1;
               mrz2 = m2Match[1];
               break;
             }
