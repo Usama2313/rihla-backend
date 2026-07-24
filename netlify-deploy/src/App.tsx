@@ -262,21 +262,31 @@ export default function App() {
 
           setStatus(`Reading page ${pageNum}…`);
           const { data } = await worker.recognize(imageSource);
-          const lines = (data.text as string).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
-          const candidateMrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
-          const candidateMrz2 = candidateMrz1 ? lines[lines.indexOf(candidateMrz1) + 1] : undefined;
+          const lines = (data.text as string).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
+          const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
 
-          if (candidateMrz1 && candidateMrz2 && candidateMrz2.length >= 28) {
-            mrz1 = candidateMrz1;
-            mrz2 = candidateMrz2;
-            break;
+          if (mrz1Index >= 0) {
+            const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
+            const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
+            if (m1Match && m2Match) {
+              mrz1 = m1Match[1];
+              mrz2 = m2Match[1];
+              break;
+            }
           }
         }
       } else {
         const { data } = await worker.recognize(file);
-        const lines = (data.text as string).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 40);
-        mrz1 = lines.find((line: string) => /^P[<A-Z]/.test(line));
-        mrz2 = mrz1 ? lines[lines.indexOf(mrz1) + 1] : undefined;
+        const lines = (data.text as string).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, "")).filter((line: string) => line.length >= 30);
+        const mrz1Index = lines.findIndex((line: string) => /P[<A-Z].{25,}/.test(line));
+        if (mrz1Index >= 0) {
+          const m1Match = lines[mrz1Index].match(/(P[<A-Z].+)/);
+          const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
+          if (m1Match && m2Match) {
+            mrz1 = m1Match[1];
+            mrz2 = m2Match[1];
+          }
+        }
       }
 
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
