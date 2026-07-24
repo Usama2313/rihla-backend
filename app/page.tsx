@@ -271,94 +271,53 @@ export default function Home() {
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          setStatus(`Converting PDF page ${pageNum} of ${pdf.numPages}…`);
           const page = await pdf.getPage(pageNum);
-          for (const rotation of [0, 90, 180, 270]) {
-            setStatus(rotation > 0 ? `Checking page ${pageNum} orientation (${rotation}°)…` : `Converting PDF page ${pageNum} of ${pdf.numPages}…`);
-            const viewport = page.getViewport({ scale: 3.0, rotation: rotation });
-            const canvas = document.createElement("canvas");
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const ctx = canvas.getContext("2d")!;
-            // @ts-ignore
-            await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
-            const imageSource = await new Promise<Blob>((resolve, reject) =>
-              canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
-            );
-
-            if (rotation === 0) setStatus(`Reading page ${pageNum}…`);
-            const { data } = await worker.recognize(imageSource);
-            const lines = String(data.text).toUpperCase().split(/\r?\n/)
-              .map((line: string) => line.replace(/\s/g, "").replace(/[\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
-              .filter((line: string) => line.length >= 30);
-            
-            const mrz1Index = lines.findIndex((line: string) => {
-              const pIdx = line.indexOf("P");
-              if (pIdx >= 0 && pIdx <= 10) {
-                const rest = line.slice(pIdx);
-                return rest.length >= 35 && (rest.match(/</g) || []).length >= 2;
-              }
-              return false;
-            });
-
-            if (mrz1Index >= 0) {
-              const m1 = lines[mrz1Index].slice(lines[mrz1Index].indexOf("P"));
-              const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
-              if (m1 && m2Match) {
-                mrz1 = m1;
-                mrz2 = m2Match[1];
-                break;
-              }
-            }
-          }
-          if (mrz1 && mrz2) break;
-        }
-      } else {
-        const image = new Image();
-        image.src = URL.createObjectURL(file);
-        await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
-        for (const rotation of [0, 90, 180, 270]) {
-          setStatus(rotation > 0 ? `Checking image orientation (${rotation}°)…` : `Reading image…`);
+          const viewport = page.getViewport({ scale: 3.0 });
           const canvas = document.createElement("canvas");
-          if (rotation === 0 || rotation === 180) {
-            canvas.width = image.width;
-            canvas.height = image.height;
-          } else {
-            canvas.width = image.height;
-            canvas.height = image.width;
-          }
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
           const ctx = canvas.getContext("2d")!;
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate((rotation * Math.PI) / 180);
-          ctx.drawImage(image, -image.width / 2, -image.height / 2);
+          // @ts-ignore
+          await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
           const imageSource = await new Promise<Blob>((resolve, reject) =>
             canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png")
           );
 
+          setStatus(`Reading page ${pageNum}…`);
           const { data } = await worker.recognize(imageSource);
-          const lines = String(data.text).toUpperCase().split(/\r?\n/)
-            .map((line: string) => line.replace(/\s/g, "").replace(/[\(\)\{\}\[\]\.,:;_\-\|\«\»]/g, "<").replace(/[^A-Z0-9<]/g, "<"))
-            .filter((line: string) => line.length >= 30);
+          const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, ""));
           
-          const mrz1Index = lines.findIndex((line: string) => {
-            const pIdx = line.indexOf("P");
-            if (pIdx >= 0 && pIdx <= 10) {
-              const rest = line.slice(pIdx);
-              return rest.length >= 35 && (rest.match(/</g) || []).length >= 2;
+          for (let i = 0; i < lines.length; i++) {
+            const match1 = lines[i].match(/(P[<A-Z].{25,})/);
+            if (match1) {
+              const nextLine = lines[i + 1] || "";
+              const match2 = nextLine.match(/([A-Z0-9<]{25,})/);
+              if (match2) {
+                mrz1 = match1[1];
+                mrz2 = match2[1];
+                break;
+              }
             }
-            return false;
-          });
-
-          if (mrz1Index >= 0) {
-            const m1 = lines[mrz1Index].slice(lines[mrz1Index].indexOf("P"));
-            const m2Match = lines[mrz1Index + 1] ? lines[mrz1Index + 1].match(/([A-Z0-9<]{28,})/) : null;
-            if (m1 && m2Match) {
-              mrz1 = m1;
-              mrz2 = m2Match[1];
+          }
+          
+          if (mrz1 && mrz2) break;
+        }
+      } else {
+        const { data } = await worker.recognize(file);
+        const lines = String(data.text).toUpperCase().split(/\r?\n/).map((line: string) => line.replace(/\s/g, ""));
+        for (let i = 0; i < lines.length; i++) {
+          const match1 = lines[i].match(/(P[<A-Z].{25,})/);
+          if (match1) {
+            const nextLine = lines[i + 1] || "";
+            const match2 = nextLine.match(/([A-Z0-9<]{25,})/);
+            if (match2) {
+              mrz1 = match1[1];
+              mrz2 = match2[1];
               break;
             }
           }
         }
-        URL.revokeObjectURL(image.src);
       }
 
       if (!mrz1 || !mrz2 || mrz2.length < 28) throw new Error("MRZ not found. Please use a clear photo or PDF scan of the passport information page.");
